@@ -1134,9 +1134,148 @@ html[data-theme="light"] .modal-input { background: rgba(255,255,255,0.50); }
   color: #fff;
   box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--accent) 60%, transparent), 0 1px 0 inset rgba(255,255,255,0.3);
 }
+
+/* ══════════════════════════════════════════
+   AUTH STATE — hide app shell until auth resolves
+   ══════════════════════════════════════════ */
+body:not(.auth-ok) #board-root,
+body:not(.auth-ok) #topbar,
+body:not(.auth-ok) #sidebar,
+body:not(.auth-ok) #zoom-controls,
+body:not(.auth-ok) #grid-toggle,
+body:not(.auth-ok) #boards-picker,
+body:not(.auth-ok) #align-bar,
+body:not(.auth-ok) #empty,
+body:not(.auth-ok) #kbd-hint,
+body:not(.auth-ok) #tweaks-panel { display: none !important; }
+
+/* Auth loading spinner */
+#auth-loading-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  align-items: center; justify-content: center;
+  background: var(--board-bg, #0e0d12);
+  flex-direction: column; gap: 16px;
+}
+body.auth-loading #auth-loading-overlay { display: flex; }
+.auth-spinner {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.1);
+  border-top-color: var(--accent, #4a6cf7);
+  animation: spin .7s linear infinite;
+}
+.auth-spinner-label {
+  font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+}
+
+/* ── Login screen ── */
+#login-screen {
+  display: none; position: fixed; inset: 0; z-index: 8000;
+  align-items: center; justify-content: center;
+  background: var(--board-bg, #0e0d12); padding: 24px;
+}
+body.auth-required #login-screen { display: flex; }
+
+.login-card {
+  width: 100%; max-width: 390px; padding: 44px 40px 36px;
+  border-radius: 26px; text-align: center;
+  background: var(--glass-tint, rgba(255,255,255,0.07));
+  backdrop-filter: blur(var(--glass-blur, 24px)) saturate(1.7);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(1.7);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.14));
+  box-shadow:
+    0 1px 0 inset rgba(255,255,255,0.18),
+    0 28px 72px -12px rgba(0,0,0,0.6),
+    0 4px 16px -4px rgba(0,0,0,0.28);
+}
+.login-brand {
+  display: flex; align-items: center; justify-content: center;
+  gap: 11px; margin-bottom: 8px;
+}
+.login-title {
+  font-family: 'DM Serif Display', serif; font-weight: 400;
+  font-size: 30px; color: var(--fg, #f3f1ec);
+  letter-spacing: -.02em; line-height: 1;
+}
+.login-subtitle {
+  font-size: 13px; color: var(--fg-muted, rgba(243,241,236,0.55));
+  letter-spacing: .02em; margin-bottom: 30px; line-height: 1.55;
+}
+.login-google-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 13px 20px; border-radius: 13px; cursor: pointer;
+  background: var(--glass-tint-hi, rgba(255,255,255,0.12));
+  border: 1px solid var(--glass-border-hi, rgba(255,255,255,0.24));
+  color: var(--fg, #f3f1ec);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2), 0 1px 0 inset rgba(255,255,255,0.15);
+  transition: background .15s, transform .1s, box-shadow .15s; margin-bottom: 18px;
+}
+.login-google-btn:hover {
+  background: rgba(255,255,255,.19); transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 1px 0 inset rgba(255,255,255,0.2);
+}
+.login-google-btn:active { transform: translateY(0); }
+.login-fine-print {
+  font-size: 11px; color: var(--fg-muted, rgba(243,241,236,0.38));
+  letter-spacing: .04em; line-height: 1.55;
+}
+.login-error {
+  margin-top: 16px; padding: 11px 14px; border-radius: 11px; text-align: left;
+  background: rgba(255,80,80,.1); border: 1px solid rgba(255,80,80,.22);
+  color: #ff8888; font-size: 12px; line-height: 1.55;
+}
+
+/* ── User area in topbar ── */
+.user-area {
+  display: flex; align-items: center; gap: 8px;
+}
+.user-avatar {
+  width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+  border: 1.5px solid var(--glass-border-hi, rgba(255,255,255,0.24)); flex-shrink: 0;
+}
+.user-display-name {
+  font-size: 12px; color: var(--fg-muted, rgba(243,241,236,0.55));
+  font-family: 'DM Sans', sans-serif;
+  max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 </style>
 </head>
-<body>
+<body class="auth-loading">
+
+<!-- Auth: loading spinner (shown while Firebase checks session) -->
+<div id="auth-loading-overlay">
+  <div class="auth-spinner"></div>
+  <span class="auth-spinner-label">Loading…</span>
+</div>
+
+<!-- Auth: login screen (shown when not signed in) -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        <rect x="2" y="2" width="11" height="11" rx="3" fill="var(--accent,#4a6cf7)" opacity=".95"/>
+        <rect x="17" y="2" width="11" height="11" rx="3" fill="var(--accent,#4a6cf7)" opacity=".6"/>
+        <rect x="2" y="17" width="11" height="11" rx="3" fill="var(--accent,#4a6cf7)" opacity=".6"/>
+        <rect x="17" y="17" width="11" height="11" rx="3" fill="var(--accent,#4a6cf7)" opacity=".3"/>
+      </svg>
+      <h1 class="login-title">Board</h1>
+    </div>
+    <p class="login-subtitle">Sign in to save and sync your boards</p>
+    <button id="btn-google-signin" class="login-google-btn">
+      <!-- Google G logo -->
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <p class="login-fine-print">Your boards will be saved securely to your account</p>
+    <div id="login-error" class="login-error" style="display:none"></div>
+  </div>
+</div>
 
 <!-- Boards picker (home screen) -->
 <div id="boards-picker" class="hidden">
@@ -1189,10 +1328,12 @@ html[data-theme="light"] .modal-input { background: rgba(255,255,255,0.50); }
   <button class="top-icon-btn" id="btn-redo" title="Redo (⌘⇧Z)" disabled>
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 6H8a4 4 0 100 8h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 6l-3-3M14 6l-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
   </button>
-  <!-- Sign-in / user avatar button -->
-  <button class="top-icon-btn" id="btn-auth" title="Sign in with Google to sync boards across devices">
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 13.5c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-  </button>
+  <!-- User area (shown when signed in) -->
+  <div class="user-area" id="user-area">
+    <img id="user-avatar" class="user-avatar" src="" alt="" style="display:none">
+    <span id="user-display-name" class="user-display-name"></span>
+    <button class="topbar-btn" id="btn-signout">Sign out</button>
+  </div>
   <div class="topbar-right">
     <!-- Grid toggle -->
     <button class="top-icon-btn" id="btn-grid" title="Toggle grid (G)">
@@ -1472,7 +1613,7 @@ var firebaseConfig = {
   measurementId:     "G-B1G5LGG16B"
 };
 
-// Firebase service references (populated below; null until initialized)
+// Firebase service references
 var fbApp  = null;
 var fbDb   = null;
 var fbAuth = null;
@@ -1487,80 +1628,108 @@ try {
   console.warn('[Firebase] initialization failed:', e.message);
 }
 
-// ── Auth UI helper ──
-function updateAuthUI(user) {
-  var btn = document.getElementById('btn-auth');
-  if (!btn) return;
-  if (user) {
-    var name = user.isAnonymous ? 'Anonymous' : (user.displayName || user.email || 'Signed in');
-    btn.title = name + ' — click to sign out';
-    if (user.photoURL) {
-      btn.innerHTML = '<img src="' + user.photoURL + '" style="width:22px;height:22px;border-radius:50%;object-fit:cover;" alt="avatar">';
-    } else {
-      btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" fill="currentColor"/><path d="M2.5 13.5c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>';
-      btn.style.color = user.isAnonymous ? 'var(--muted)' : 'var(--orange)';
-    }
-  } else {
-    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 13.5c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
-    btn.title = 'Sign in with Google to sync boards across devices';
-    btn.style.color = '';
+// ── Show full board app ──────────────────────────────────────────
+function showApp(user) {
+  document.body.classList.remove('auth-loading', 'auth-required');
+  document.body.classList.add('auth-ok');
+  _populateUserArea(user);
+  console.log('[Firebase] Auth state checked — user signed in');
+  if (typeof bootBoard === 'function') {
+    bootBoard().then(function() {
+      if (user && !user.isAnonymous) {
+        if (typeof migrateLocalDataToFirestore === 'function') {
+          migrateLocalDataToFirestore().then(function() {
+            if (typeof syncIndexFromFirestore === 'function') syncIndexFromFirestore();
+          });
+        }
+      }
+    }).catch(function(e) { console.warn('[Board] Boot error:', e); });
   }
 }
 
-// ── Sign-in: Google first, anonymous fallback ──
-async function signIn() {
-  if (!fbAuth) {
-    alert('Firebase not configured.\nOpen index.html and replace the PASTE_*_HERE placeholders with your real Firebase config.');
-    return;
-  }
+// ── Show login screen ────────────────────────────────────────────
+function showLoginScreen() {
+  document.body.classList.remove('auth-loading', 'auth-ok');
+  document.body.classList.add('auth-required');
+  console.log('[Firebase] Auth state checked — no user, showing login');
+}
+
+// ── Populate topbar user area ────────────────────────────────────
+function _populateUserArea(user) {
+  var nameEl   = document.getElementById('user-display-name');
+  var avatarEl = document.getElementById('user-avatar');
+  if (!user || !nameEl) return;
+  var name = user.isAnonymous ? 'Guest' : (user.displayName || user.email || 'User');
+  nameEl.textContent = name.split(' ')[0];
+  if (user.photoURL && avatarEl) { avatarEl.src = user.photoURL; avatarEl.style.display = 'block'; }
+}
+
+// ── Login error message ──────────────────────────────────────────
+function _showLoginError(msg) {
+  var el = document.getElementById('login-error');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+// ── Google Sign-In ───────────────────────────────────────────────
+async function signInWithGoogle() {
+  if (!fbAuth) { _showLoginError('Firebase is not configured. Check the firebaseConfig in index.html.'); return; }
+  _showLoginError('');
   try {
-    var provider = new firebase.auth.GoogleAuthProvider();
-    await fbAuth.signInWithPopup(provider);
+    await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    console.log('[Firebase] User signed in');
   } catch(e) {
     if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
-    console.warn('[Firebase] Google sign-in failed, trying anonymous:', e.message);
-    // NOTE: anonymous auth saves to Firestore for this session only.
-    //       Use Google sign-in for real cross-device sync.
-    try {
-      await fbAuth.signInAnonymously();
-    } catch(ae) {
-      console.warn('[Firebase] Authentication failed:', ae.message);
-    }
+    console.warn('[Firebase] Sign-in failed:', e.code, e.message);
+    _showLoginError(e.code === 'auth/unauthorized-domain'
+      ? 'This domain is not authorized. Add "' + location.hostname + '" to Firebase Console → Authentication → Settings → Authorized domains.'
+      : 'Sign-in failed: ' + (e.message || e.code || 'Unknown error'));
   }
 }
 
-async function signOut() {
+// ── Sign-Out ─────────────────────────────────────────────────────
+async function signOutUser() {
   if (!fbAuth) return;
   try {
     if (typeof save === 'function' && typeof currentBoardId !== 'undefined' && currentBoardId) save();
     await fbAuth.signOut();
     fbUser = null;
-    updateAuthUI(null);
-    console.log('[Firebase] Signed out');
-  } catch(e) {
-    console.warn('[Firebase] Sign-out error:', e.message);
-  }
+    console.log('[Firebase] User signed out');
+    showLoginScreen();
+  } catch(e) { console.warn('[Firebase] Sign-out error:', e.message); }
 }
 
-// ── Watch authentication state ──
+// ── Wire up buttons ───────────────────────────────────────────────
+var _btnGoogle  = document.getElementById('btn-google-signin');
+var _btnSignOut = document.getElementById('btn-signout');
+if (_btnGoogle)  _btnGoogle.addEventListener('click',  signInWithGoogle);
+if (_btnSignOut) _btnSignOut.addEventListener('click', signOutUser);
+
+// ── Auth state listener ──────────────────────────────────────────
 if (fbAuth) {
   fbAuth.onAuthStateChanged(function(user) {
     fbUser = user;
-    if (user) {
-      console.log('[Firebase] User authenticated:', user.uid, user.isAnonymous ? '(anonymous)' : '(Google)');
-      updateAuthUI(user);
-      // Migrate any existing local boards to Firestore on first sign-in
-      if (typeof migrateLocalDataToFirestore === 'function') {
-        migrateLocalDataToFirestore().then(function() {
-          if (typeof syncIndexFromFirestore === 'function') syncIndexFromFirestore();
-        });
-      }
-    } else {
-      console.log('[Firebase] No authenticated user — working with local storage');
-      updateAuthUI(null);
-    }
+    if (user) { showApp(user); } else { showLoginScreen(); }
   });
+} else {
+  // Firebase unavailable — local-only mode
+  console.warn('[Firebase] Running in local-only mode');
+  document.body.classList.remove('auth-loading');
+  document.body.classList.add('auth-ok');
+  var _localNameEl = document.getElementById('user-display-name');
+  if (_localNameEl) _localNameEl.textContent = 'Local';
+  setTimeout(function() { if (typeof bootBoard === 'function') bootBoard(); }, 0);
 }
+
+// ── Re-sync when coming back online ─────────────────────────────
+window.addEventListener('online', async function() {
+  if (!fbUser || typeof currentBoardId === 'undefined' || !currentBoardId) return;
+  console.log('[Firebase] Back online — syncing to Firestore');
+  if (typeof saveBoardData === 'function' && typeof snapshotCurrent === 'function') {
+    await saveBoardData(currentBoardId, snapshotCurrent());
+  }
+});
 </script>
 
 <script>
@@ -1670,10 +1839,25 @@ speedSlider.addEventListener('input', () => {
 // ─────────────────────────────────────────────
 function applyTheme(dark) {
   isDark = dark;
-  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const root = document.documentElement;
+  root.setAttribute('data-theme', dark ? 'dark' : 'light');
+
+  // Keep the tweaks panel glass vars in sync (its inline styles override the stylesheet)
+  if (typeof window.__syncTweaksTheme === 'function') {
+    window.__syncTweaksTheme(dark);
+  } else {
+    // Fallback: flip board-bg if it's still on the wrong theme's auto-color
+    const curBg = (root.style.getPropertyValue('--board-bg') || '').trim().toLowerCase();
+    const LIGHT_AUTO = new Set(['#ece7df','#f3ecdc','#e2e8ef','#eee3d6','#ffffff','#f3f1ec']);
+    const DARK_AUTO  = new Set(['#0e0d12','#0b1525','#10131a','#1a1326','#2a1818']);
+    if (dark  && LIGHT_AUTO.has(curBg)) root.style.setProperty('--board-bg', '#0e0d12');
+    if (!dark && DARK_AUTO.has(curBg))  root.style.setProperty('--board-bg', '#f3ecdc');
+  }
+
   document.getElementById('icon-moon').style.display = dark ? 'block' : 'none';
   document.getElementById('icon-sun').style.display  = dark ? 'none'  : 'block';
   document.getElementById('btn-theme').title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+  console.log('[Theme] Changed to', dark ? 'dark' : 'light');
 }
 document.getElementById('btn-theme').addEventListener('click', () => { applyTheme(!isDark); save(); });
 
@@ -3290,24 +3474,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !pickerEl.classList.contains('hidden') && currentBoardId) hidePicker();
 });
 
-// ── Auth button: sign in or sign out ──
-document.getElementById('btn-auth').addEventListener('click', async () => {
-  if (fbUser) {
-    if (confirm('Sign out? Your boards are saved locally and will stay on this device.')) {
-      await signOut();
-    }
-  } else {
-    await signIn();
-  }
-});
-
-// ── Re-sync to Firestore when coming back online after being offline ──
-window.addEventListener('online', async () => {
-  if (!fbUser || !currentBoardId) return;
-  console.log('[Firebase] Back online — syncing current board to Firestore');
-  await saveBoardData(currentBoardId, snapshotCurrent());
-});
-
 document.getElementById('board-name').addEventListener('input',save);
 
 // ─────────────────────────────────────────────
@@ -3363,14 +3529,13 @@ document.getElementById('import-file-input').addEventListener('change', e => {
 });
 
 // ─────────────────────────────────────────────
-// BOOT
+// BOOT  — called by Firebase auth (see Firebase init script above)
 // ─────────────────────────────────────────────
-migrateLegacy();
-(async () => {
+async function bootBoard() {
+  migrateLegacy();
   const idx = loadIndex();
   const desired = localStorage.getItem(CUR_KEY);
   if (idx.length === 0) {
-    // First-time user: create a fresh board and open it
     const id = createBoard();
     await loadBoardById(id);
   } else if (desired && idx.some(b => b.id === desired)) {
@@ -3381,7 +3546,7 @@ migrateLegacy();
   applyGridMode();
   applyTransform();
   updateHistoryBtns();
-})();
+}
 
 // ─────────────────────────────────────────────
 // SERVICE WORKER (PWA — offline + installable)
@@ -3477,6 +3642,8 @@ if ('serviceWorker' in navigator) {
   }
 
   function persist(patch){
+    // Save to localStorage so theme/colors survive page reloads
+    try { localStorage.setItem('vboard-tweaks', JSON.stringify({boardBg:state.boardBg,accent:state.accent,theme:state.theme,glassBlur:state.glassBlur})); } catch(e){}
     try { window.parent.postMessage({ type:'__edit_mode_set_keys', edits: patch }, '*'); } catch(e){}
   }
 
@@ -3549,7 +3716,11 @@ if ('serviceWorker' in navigator) {
     return 0.2126*r + 0.7152*g + 0.0722*b;
   }
 
-  const state = Object.assign({}, TWEAK_DEFAULTS);
+  // Load from localStorage so theme/colors persist between sessions
+  const _savedTweaks = (function(){
+    try { return JSON.parse(localStorage.getItem('vboard-tweaks') || 'null'); } catch { return null; }
+  })();
+  const state = Object.assign({}, TWEAK_DEFAULTS, _savedTweaks || {});
 
   /* Ensure boardBg matches the theme on boot (handles stale persisted values) */
   function reconcileBoardBgWithTheme(){
@@ -3565,6 +3736,21 @@ if ('serviceWorker' in navigator) {
 
   apply(state);
   renderSwatches(state);
+
+  /* Expose a hook so main applyTheme() can keep the tweaks panel in sync.
+     This prevents the tweaks panel's inline CSS vars from overriding the theme. */
+  window.__syncTweaksTheme = function(dark) {
+    const newTheme = dark ? 'dark' : 'light';
+    if (state.theme === newTheme) return;
+    state.theme = newTheme;
+    if (AUTO_BG.has((state.boardBg || '').toLowerCase())) {
+      state.boardBg = THEME_DEFAULTS[newTheme].boardBg;
+      const row = document.querySelector('.tw-swatches[data-key="boardBg"]');
+      if (row) markSelected(row, state.boardBg);
+    }
+    apply(state);
+    try { localStorage.setItem('vboard-tweaks', JSON.stringify({boardBg:state.boardBg,accent:state.accent,theme:state.theme,glassBlur:state.glassBlur})); } catch(e){}
+  };
 
   /* Mode buttons */
   document.querySelectorAll('.tw-mode-btn').forEach(btn => {

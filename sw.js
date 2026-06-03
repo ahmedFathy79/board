@@ -2,7 +2,7 @@
 // HTML: network-first (always fresh). Static assets: cache-first (fast).
 // Firebase/Firestore requests: always network-only (never cached).
 
-const CACHE = 'vboard-v5';
+const CACHE = 'vboard-v6';
 const SHELL = [
   './',
   './index.html',
