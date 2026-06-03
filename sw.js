@@ -1,8 +1,9 @@
-// Canvas Board — Service Worker
+// Canvas Board — Service Worker v7
 // HTML: network-first (always fresh). Static assets: cache-first (fast).
-// Firebase/Firestore requests: always network-only (never cached).
+// Firebase/Firestore: network-only (never cached).
+// /share route: serves index.html so Web Share Target params are handled by JS.
 
-const CACHE = 'vboard-v6';
+const CACHE = 'vboard-v7';
 const SHELL = [
   './',
   './index.html',
@@ -31,8 +32,18 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
+  // ── Web Share Target: /share → serve index.html so JS handles params ──
+  // The PWA manifest routes share intents here; JS reads query params and creates cards.
+  if (url.pathname === '/share') {
+    e.respondWith(
+      caches.match('./index.html')
+        .then(c => c || fetch('./index.html'))
+        .catch(() => new Response('Board app unavailable offline', { status: 503 }))
+    );
+    return;
+  }
+
   // ── Always network-only for external services (never cache these) ──
-  // Firebase / Firestore / Google Auth must never be served from cache
   const networkOnly = [
     'firebaseapp.com', 'firebasedatabase.app',
     'googleapis.com',        // covers firestore.googleapis.com, securetoken.googleapis.com
@@ -49,7 +60,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // ── HTML: network-first so code changes are always visible immediately ──
+  // ── HTML: network-first so code changes are visible immediately ──
   if (e.request.headers.get('accept')?.includes('text/html')) {
     e.respondWith(
       fetch(e.request)
@@ -58,6 +69,10 @@ self.addEventListener('fetch', e => {
             const copy = resp.clone();
             caches.open(CACHE).then(c => c.put(e.request, copy));
           }
+          // SPA fallback: serve index.html for any non-200 (404 etc.)
+          if (resp && resp.status !== 200) {
+            return caches.match('./index.html').then(c => c || fetch('./index.html'));
+          }
           return resp;
         })
         .catch(() => caches.match(e.request).then(c => c || caches.match('./index.html')))
@@ -65,7 +80,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // ── Everything else (icons, manifest): cache-first, fallback to network ──
+  // ── Everything else (icons, manifest): cache-first ──
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;

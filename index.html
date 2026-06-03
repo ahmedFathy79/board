@@ -1239,6 +1239,117 @@ body.auth-required #login-screen { display: flex; }
   font-family: 'DM Sans', sans-serif;
   max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* ══════════════════════════════════════════
+   INSTAGRAM IMPORT DIALOG
+   ══════════════════════════════════════════ */
+.import-overlay {
+  position: fixed; inset: 0; z-index: 3000;
+  background: rgba(8,7,12,0.65); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.import-overlay.open { opacity: 1; pointer-events: all; }
+.import-dialog {
+  width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
+  border-radius: 22px; padding: 22px 22px 18px;
+  background: var(--glass-tint, rgba(255,255,255,0.07));
+  backdrop-filter: blur(var(--glass-blur,24px)) saturate(1.7);
+  -webkit-backdrop-filter: blur(var(--glass-blur,24px)) saturate(1.7);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.14));
+  box-shadow: 0 1px 0 inset rgba(255,255,255,0.16), 0 24px 60px -10px rgba(0,0,0,0.6);
+  transform: scale(.96); transition: transform .2s;
+}
+.import-overlay.open .import-dialog { transform: scale(1); }
+.import-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.import-title  { display:flex; align-items:center; gap:9px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:500; color:var(--fg,#f3f1ec); }
+.import-close  {
+  width:30px; height:30px; border-radius:8px; border:none; flex-shrink:0;
+  background:var(--glass-tint-hi,rgba(255,255,255,0.1)); color:var(--fg-muted,rgba(243,241,236,0.55));
+  font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background .15s;
+}
+.import-close:hover { background:rgba(255,80,80,.15); color:#ff8888; }
+.import-label {
+  display:block; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--fg-muted,rgba(243,241,236,0.5)); margin:14px 0 6px;
+}
+.import-optional { text-transform:none; letter-spacing:0; opacity:.6; font-size:10px; }
+.import-input, .import-textarea, .import-select {
+  width:100%; padding:11px 14px; border-radius:11px;
+  background:rgba(0,0,0,0.16); border:1px solid var(--glass-border,rgba(255,255,255,0.14));
+  color:var(--fg,#f3f1ec); font-family:'DM Sans',sans-serif; font-size:14px;
+  outline:none; transition:border-color .15s; -webkit-appearance:none; appearance:none;
+}
+.import-input:focus, .import-textarea:focus, .import-select:focus { border-color:var(--accent,#4a6cf7); }
+.import-input::placeholder, .import-textarea::placeholder { color:var(--fg-muted,rgba(243,241,236,0.38)); }
+.import-textarea { resize:none; line-height:1.5; }
+.import-select { cursor:pointer; }
+.import-select option { background:#1a1618; color:#f3f1ec; }
+.import-collection-row { display:flex; gap:8px; align-items:stretch; }
+.import-collection-row .import-select { flex:1; }
+.import-btn-new-col {
+  padding:11px 14px; border-radius:11px; flex-shrink:0;
+  border:1px solid var(--glass-border,rgba(255,255,255,0.14));
+  background:var(--glass-tint-hi,rgba(255,255,255,0.1));
+  color:var(--fg-muted,rgba(243,241,236,0.6));
+  font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; white-space:nowrap;
+  transition:background .15s, color .15s;
+}
+.import-btn-new-col:hover { background:rgba(255,255,255,.16); color:var(--fg,#f3f1ec); }
+.import-field-error {
+  font-size:12px; color:#ff8888; margin-top:6px; padding:8px 12px;
+  border-radius:8px; background:rgba(255,80,80,.1); border:1px solid rgba(255,80,80,.2);
+}
+.import-footer {
+  display:flex; gap:10px; justify-content:flex-end; margin-top:20px;
+  padding-top:16px; border-top:1px solid var(--glass-border,rgba(255,255,255,0.1));
+}
+.import-btn-cancel {
+  padding:11px 20px; border-radius:11px; border:1px solid var(--glass-border,rgba(255,255,255,0.14));
+  background:transparent; color:var(--fg-muted,rgba(243,241,236,0.55));
+  font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; transition:background .15s, color .15s;
+}
+.import-btn-cancel:hover { background:var(--glass-tint-hi,rgba(255,255,255,0.1)); color:var(--fg,#f3f1ec); }
+.import-btn-add {
+  padding:11px 24px; border-radius:11px; border:none;
+  background:var(--accent,#4a6cf7); color:#fff;
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer;
+  transition:opacity .15s, transform .1s;
+  box-shadow:0 4px 14px -4px color-mix(in srgb, var(--accent,#4a6cf7) 60%, transparent);
+}
+.import-btn-add:hover { opacity:.88; transform:translateY(-1px); }
+.import-btn-add:active { transform:translateY(0); }
+
+/* Instagram card badge */
+.ig-badge {
+  display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
+  border-radius:20px; font-size:10px; font-weight:500; letter-spacing:.06em;
+  background:linear-gradient(135deg,rgba(225,48,108,.18),rgba(64,93,230,.18));
+  border:1px solid rgba(225,48,108,.28); color:#e1306c; white-space:nowrap;
+  margin-left:4px; flex-shrink:0;
+}
+
+/* ── Mobile-friendly improvements ── */
+@media (max-width: 640px) {
+  #topbar { padding:0 8px 0 8px; gap:2px; }
+  #board-name { max-width:80px; font-size:12px; }
+  .topbar-btn { padding:4px 10px; font-size:10px; }
+  .user-display-name { display:none; }
+  #zoom-controls { bottom:12px; right:12px; }
+  #grid-toggle { bottom:12px; left:12px; }
+  .import-dialog { padding:18px 16px 16px; border-radius:18px; }
+  .import-footer { flex-direction:column-reverse; }
+  .import-btn-add, .import-btn-cancel { width:100%; text-align:center; justify-content:center; }
+  .login-card { padding:32px 24px 28px; }
+}
+@media (hover: none) and (pointer: coarse) {
+  /* Touch devices — slightly larger tap targets */
+  .top-icon-btn { min-width:36px; min-height:36px; }
+  .login-google-btn { padding:16px 20px; font-size:15px; }
+  .import-input, .import-textarea, .import-select { padding:13px 14px; }
+  .import-btn-add, .import-btn-cancel { padding:13px 20px; }
+}
 </style>
 </head>
 <body class="auth-loading">
@@ -1347,6 +1458,14 @@ body.auth-required #login-screen { display: flex; }
     <!-- Help -->
     <button class="top-icon-btn" id="btn-help" title="Keyboard shortcuts (?)">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 5.5a2 2 0 113 1.7c-.6.4-1 .9-1 1.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="11" r=".75" fill="currentColor"/></svg>
+    </button>
+    <!-- Instagram import -->
+    <button class="top-icon-btn" id="btn-import" title="Import from Instagram">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <rect x="1.5" y="1.5" width="12" height="12" rx="3.5" stroke="currentColor" stroke-width="1.3"/>
+        <circle cx="7.5" cy="7.5" r="2.8" stroke="currentColor" stroke-width="1.3"/>
+        <circle cx="11.2" cy="3.8" r=".85" fill="currentColor"/>
+      </svg>
     </button>
     <button class="topbar-btn" id="tb-clear">Clear</button>
   </div>
@@ -1592,6 +1711,52 @@ body.auth-required #login-screen { display: flex; }
   </div>
 </div>
 
+<!-- Instagram Import Dialog -->
+<div id="import-overlay" class="import-overlay">
+  <div class="import-dialog">
+    <div class="import-header">
+      <div class="import-title">
+        <svg width="16" height="16" viewBox="0 0 15 15" fill="none">
+          <rect x="1.5" y="1.5" width="12" height="12" rx="3.5" stroke="#e1306c" stroke-width="1.3"/>
+          <circle cx="7.5" cy="7.5" r="2.8" stroke="#e1306c" stroke-width="1.3"/>
+          <circle cx="11.2" cy="3.8" r=".85" fill="#e1306c"/>
+        </svg>
+        Import from Instagram
+      </div>
+      <button class="import-close" id="import-close" aria-label="Close">×</button>
+    </div>
+
+    <label class="import-label">Instagram URL</label>
+    <input type="url" id="import-url" class="import-input"
+      placeholder="https://www.instagram.com/p/…  or  /reel/…"
+      autocomplete="off" autocorrect="off" spellcheck="false">
+    <div id="import-url-error" class="import-field-error" style="display:none"></div>
+
+    <label class="import-label">Collection</label>
+    <div class="import-collection-row">
+      <select id="import-collection" class="import-select"></select>
+      <button class="import-btn-new-col" id="import-new-col-btn" type="button">+ New</button>
+    </div>
+    <div id="import-new-col-wrap" style="display:none; margin-top:8px">
+      <input type="text" id="import-new-col-name" class="import-input"
+        placeholder="Collection name…" maxlength="50" autocorrect="off">
+    </div>
+
+    <label class="import-label">Title <span class="import-optional">(optional)</span></label>
+    <input type="text" id="import-title" class="import-input"
+      placeholder="Post title or description…" maxlength="200" autocorrect="off">
+
+    <label class="import-label">Notes <span class="import-optional">(optional)</span></label>
+    <textarea id="import-notes" class="import-textarea" rows="2"
+      placeholder="Personal notes…" maxlength="500"></textarea>
+
+    <div class="import-footer">
+      <button class="import-btn-cancel" id="import-cancel" type="button">Cancel</button>
+      <button class="import-btn-add"    id="import-submit" type="button">Add to Board</button>
+    </div>
+  </div>
+</div>
+
 <div id="kbd-hint">V Select · H Hand · F Frame · N Sticky · T Text · S Shapes · L Line · P Pen · C Comment · ⌥Drag = Copy</div>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -1602,6 +1767,28 @@ body.auth-required #login-screen { display: flex; }
      Get it from:  Firebase Console → Project Settings → Your apps → SDK setup
      ─────────────────────────────────────────────────────────── -->
 <script>
+// ── Detect Web Share Target params as early as possible ─────────
+// Saves pending share data to localStorage before Firebase even initializes,
+// so nothing is lost regardless of auth state or network speed.
+(function _saveShareParams(){
+  try {
+    const p = new URLSearchParams(location.search);
+    const sharedUrl   = p.get('url')   || '';
+    const sharedText  = p.get('text')  || '';
+    const sharedTitle = p.get('title') || '';
+    const urlInText   = sharedText.match(/https?:\/\/\S+/)?.[0] || '';
+    const targetUrl   = sharedUrl || urlInText;
+    if (targetUrl || location.pathname === '/share') {
+      const igPat = /instagram\.com\/(p|reel|reels|tv)\//i;
+      localStorage.setItem('vboard-pending-share', JSON.stringify({
+        url: targetUrl, title: sharedTitle, text: sharedText,
+        isInstagram: igPat.test(targetUrl), timestamp: Date.now()
+      }));
+      history.replaceState({}, document.title, '/');
+    }
+  } catch(e) {}
+})();
+
 // ── Firebase config ── (replace placeholders with your real values)
 var firebaseConfig = {
   apiKey:            "AIzaSyDPLD4G9mm6QT8T07wWyquzaisnm9nkl6g",
@@ -1757,6 +1944,7 @@ let selectedFrame = null;
 let gridMode = 'dots'; // 'off' | 'dots' | 'lines'
 let isDark = true;
 let panSpeed = 1;
+let boardCollections = []; // [{ id, name, createdAt, updatedAt }]
 
 const undoStack = [], redoStack = [];
 const MAX_HISTORY = 50;
@@ -2631,13 +2819,21 @@ function viewportCenter() {
   return { x:(vw/2-panX)/scale-160, y:(vh/2-panY)/scale-110 };
 }
 
-function makeCard({ id, type, src, label, x, y, w, h, color, text, shape, originalUrl }) {
-  const data = { id, type, src, label, x, y, w, h, color, text, shape, originalUrl };
+function makeCard({ id, type, src, label, x, y, w, h, color, text, shape, originalUrl,
+                    collectionId, collectionName, instagramType, importedTitle, importedAt, notes }) {
+  const data = { id, type, src, label, x, y, w, h, color, text, shape, originalUrl,
+                 collectionId, collectionName, instagramType, importedTitle, importedAt, notes };
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.id = id; card.dataset.type = type; card.dataset.src = src||'';
-  if (originalUrl) card.dataset.originalUrl = originalUrl;
-  if (shape) card.dataset.shape = shape;
+  if (originalUrl)    card.dataset.originalUrl  = originalUrl;
+  if (shape)          card.dataset.shape        = shape;
+  if (collectionId)   card.dataset.collectionId   = collectionId;
+  if (collectionName) card.dataset.collectionName = collectionName;
+  if (instagramType)  card.dataset.instagramType  = instagramType;
+  if (importedTitle)  card.dataset.importedTitle  = importedTitle;
+  if (importedAt)     card.dataset.importedAt     = String(importedAt);
+  if (notes)          card.dataset.notes          = notes;
   if (color) card.classList.add('sticky', `sticky-${color}`);
   if (type==='text')    card.classList.add('text-card');
   if (type==='shape')   card.classList.add('shape-card');
@@ -2652,7 +2848,14 @@ function makeCard({ id, type, src, label, x, y, w, h, color, text, shape, origin
     const dots = document.createElement('div'); dots.className='card-drag-dots';
     for(let i=0;i<6;i++){const s=document.createElement('span');dots.appendChild(s);}
     const lbl = document.createElement('div'); lbl.className='card-label';
-    lbl.textContent=label||'Card'; lbl.contentEditable=true; lbl.spellcheck=false;
+    lbl.textContent=label||'Card';
+    // Add Instagram badge when this card was imported
+    if (type==='instagram' && collectionName) {
+      const badge = document.createElement('span'); badge.className='ig-badge';
+      badge.textContent = instagramType || 'post';
+      lbl.appendChild(badge);
+    }
+    lbl.contentEditable=true; lbl.spellcheck=false;
     lbl.addEventListener('mousedown',e=>e.stopPropagation());
     lbl.addEventListener('input',save);
     const del=document.createElement('button'); del.className='card-delete'; del.innerHTML='×'; del.title='Delete';
@@ -3106,13 +3309,21 @@ function cardToData(card){
   const lbl=card.querySelector('.card-label');
   const ta =card.querySelector('.sticky-textarea,.text-card-area,.comment-area');
   const color=[...card.classList].find(c=>c.startsWith('sticky-')&&c!=='sticky')?.replace('sticky-','');
-  return {
+  const base = {
     id:card.dataset.id, type:card.dataset.type, src:card.dataset.src,
     originalUrl:card.dataset.originalUrl||undefined,
     shape:card.dataset.shape, label:lbl?.textContent||'', text:ta?.value||'', color,
     x:parseFloat(card.style.left)||0, y:parseFloat(card.style.top)||0,
     w:card.offsetWidth, h:card.offsetHeight, z:parseInt(card.style.zIndex)||100
   };
+  // Instagram import metadata
+  if (card.dataset.collectionId)   base.collectionId   = card.dataset.collectionId;
+  if (card.dataset.collectionName) base.collectionName = card.dataset.collectionName;
+  if (card.dataset.instagramType)  base.instagramType  = card.dataset.instagramType;
+  if (card.dataset.importedTitle)  base.importedTitle  = card.dataset.importedTitle;
+  if (card.dataset.importedAt)     base.importedAt     = parseInt(card.dataset.importedAt)||undefined;
+  if (card.dataset.notes)          base.notes          = card.dataset.notes;
+  return base;
 }
 function frameToData(el){
   const lbl=el.querySelector('.frame-label');
@@ -3161,6 +3372,197 @@ function loadLocalFallback(boardId) {
 }
 
 // ── Serialise / deserialise the full board state ──
+// ─────────────────────────────────────────────
+// INSTAGRAM HELPERS
+// ─────────────────────────────────────────────
+function isInstagramUrl(url) {
+  return /instagram\.com\/(p|reel|reels|tv)\//i.test(url);
+}
+function normalizeInstagramUrl(url) {
+  try {
+    const u = new URL(url);
+    if (!/instagram\.com/.test(u.hostname)) return url;
+    const m = u.pathname.match(/^\/(p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i);
+    if (m) return `https://www.instagram.com/${m[1]}/${m[2]}/`;
+    return url;
+  } catch { return url; }
+}
+function getInstagramType(url) {
+  if (/\/reel\/|\/reels\//i.test(url)) return 'reel';
+  if (/\/tv\//i.test(url)) return 'tv';
+  if (/\/p\//i.test(url)) return 'post';
+  return 'unknown';
+}
+
+// ─────────────────────────────────────────────
+// COLLECTIONS
+// ─────────────────────────────────────────────
+function newColId() { return 'col_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6); }
+
+function ensureDefaultCollection() {
+  if (!boardCollections.find(c => c.name === 'Saved from Instagram')) {
+    boardCollections.push({ id: newColId(), name: 'Saved from Instagram', createdAt: Date.now(), updatedAt: Date.now() });
+  }
+}
+function getOrCreateCollection(name) {
+  let col = boardCollections.find(c => c.name === name.trim());
+  if (!col) {
+    col = { id: newColId(), name: name.trim(), createdAt: Date.now(), updatedAt: Date.now() };
+    boardCollections.push(col);
+    save();
+  }
+  return col;
+}
+function getAllCollections() {
+  ensureDefaultCollection();
+  return boardCollections;
+}
+
+// ─────────────────────────────────────────────
+// IMPORT DIALOG
+// ─────────────────────────────────────────────
+const importOverlay = document.getElementById('import-overlay');
+let _importPrefillUrl = '';
+
+function renderCollectionOptions() {
+  const sel = document.getElementById('import-collection');
+  if (!sel) return;
+  sel.innerHTML = '';
+  getAllCollections().forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+}
+
+function openImportDialog(prefillUrl, prefillTitle) {
+  _importPrefillUrl = prefillUrl || '';
+  const urlInput   = document.getElementById('import-url');
+  const titleInput = document.getElementById('import-title');
+  const notesInput = document.getElementById('import-notes');
+  const errEl      = document.getElementById('import-url-error');
+  const newWrap    = document.getElementById('import-new-col-wrap');
+  if (urlInput)   urlInput.value   = _importPrefillUrl;
+  if (titleInput) titleInput.value = prefillTitle || '';
+  if (notesInput) notesInput.value = '';
+  if (errEl)      { errEl.textContent=''; errEl.style.display='none'; }
+  if (newWrap)    newWrap.style.display = 'none';
+  renderCollectionOptions();
+  importOverlay.classList.add('open');
+  setTimeout(() => { if (!_importPrefillUrl && urlInput) urlInput.focus(); }, 80);
+}
+
+function closeImportDialog() {
+  importOverlay.classList.remove('open');
+  _importPrefillUrl = '';
+}
+
+function submitImport() {
+  const urlEl   = document.getElementById('import-url');
+  const colSel  = document.getElementById('import-collection');
+  const newWrap = document.getElementById('import-new-col-wrap');
+  const newName = document.getElementById('import-new-col-name');
+  const errEl   = document.getElementById('import-url-error');
+  const titleEl = document.getElementById('import-title');
+  const notesEl = document.getElementById('import-notes');
+
+  const rawUrl = (urlEl?.value || '').trim();
+  if (!rawUrl) {
+    if (errEl) { errEl.textContent='Please enter an Instagram URL.'; errEl.style.display='block'; }
+    urlEl?.focus(); return;
+  }
+  if (!isInstagramUrl(rawUrl)) {
+    if (errEl) { errEl.textContent='That doesn\'t look like an Instagram post or reel URL.\nTry: instagram.com/p/… or instagram.com/reel/…'; errEl.style.display='block'; }
+    urlEl?.focus(); return;
+  }
+  if (errEl) { errEl.textContent=''; errEl.style.display='none'; }
+
+  // Resolve collection
+  let col;
+  const showingNewField = newWrap && newWrap.style.display !== 'none';
+  if (showingNewField) {
+    const nm = (newName?.value || '').trim();
+    if (!nm) { newName?.focus(); return; }
+    col = getOrCreateCollection(nm);
+  } else {
+    const selId = colSel?.value;
+    col = boardCollections.find(c => c.id === selId) || getOrCreateCollection('Saved from Instagram');
+  }
+
+  const url   = normalizeInstagramUrl(rawUrl);
+  const title = (titleEl?.value || '').trim();
+  const notes = (notesEl?.value || '').trim();
+
+  pushHistory();
+  const c = viewportCenter();
+  const cardData = {
+    type: 'instagram', src: url, originalUrl: url,
+    label: col.name,
+    w: 400, h: 560,
+    instagramType:  getInstagramType(url),
+    collectionId:   col.id,
+    collectionName: col.name,
+    importedTitle:  title,
+    importedAt:     Date.now(),
+    notes
+  };
+  const card = spawnCard(cardData, c.x + Math.random()*60-30, c.y + Math.random()*60-30);
+  selectCard(card);
+  setTool('select');
+  closeImportDialog();
+  console.log('[Import] Instagram card created:', url, '→ collection:', col.name);
+}
+
+// Wire up import dialog buttons
+document.getElementById('import-close')?.addEventListener('click', closeImportDialog);
+document.getElementById('import-cancel')?.addEventListener('click', closeImportDialog);
+document.getElementById('import-submit')?.addEventListener('click', submitImport);
+importOverlay.addEventListener('click', e => { if (e.target === importOverlay) closeImportDialog(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && importOverlay.classList.contains('open')) closeImportDialog();
+});
+document.getElementById('import-new-col-btn')?.addEventListener('click', () => {
+  const wrap = document.getElementById('import-new-col-wrap');
+  const inp  = document.getElementById('import-new-col-name');
+  if (!wrap) return;
+  const showing = wrap.style.display !== 'none';
+  wrap.style.display = showing ? 'none' : 'block';
+  if (!showing) setTimeout(() => inp?.focus(), 60);
+});
+
+// Import button in topbar
+document.getElementById('btn-import')?.addEventListener('click', () => {
+  ensureDefaultCollection();
+  openImportDialog('');
+});
+
+// ─────────────────────────────────────────────
+// PENDING SHARE / IMPORT HANDLER
+// ─────────────────────────────────────────────
+function checkPendingImports() {
+  const raw = localStorage.getItem('vboard-pending-share');
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    // Discard stale items (>30 min old)
+    if (!data.url || Date.now() - data.timestamp > 30 * 60 * 1000) {
+      localStorage.removeItem('vboard-pending-share');
+      return;
+    }
+    localStorage.removeItem('vboard-pending-share');
+    if (data.isInstagram) {
+      openImportDialog(normalizeInstagramUrl(data.url), data.title);
+    } else if (data.url) {
+      // Generic URL shared — add as a regular card
+      const c = viewportCenter();
+      pushHistory();
+      spawnCard(parseURL(data.url), c.x + Math.random()*40-20, c.y + Math.random()*40-20);
+    }
+  } catch(e) {
+    localStorage.removeItem('vboard-pending-share');
+  }
+}
+
 function getCurrentBoardState() { return snapshotCurrent(); }
 function applyBoardState(data) {
   document.getElementById('board-name').value = data.boardName || 'Untitled';
@@ -3174,9 +3576,11 @@ function applyBoardState(data) {
   else if (data.gridVisible === false) gridMode = 'off';
   applyGridMode();
   panX = data.panX || 0; panY = data.panY || 0; scale = data.scale || 1; applyTransform();
-  if (data.frames) data.frames.sort((a,b)=>(a.z||0)-(b.z||0)).forEach(d => canvas.insertBefore(makeFrame(d), drawSVG.nextSibling));
-  if (data.cards)  data.cards.sort((a,b)=>(a.z||0)-(b.z||0)).forEach(d => { canvas.appendChild(makeCard(d)); cardCount++; });
+  if (Array.isArray(data.collections)) boardCollections = data.collections;
+  if (data.frames)   data.frames.sort((a,b)=>(a.z||0)-(b.z||0)).forEach(d => canvas.insertBefore(makeFrame(d), drawSVG.nextSibling));
+  if (data.cards)    data.cards.sort((a,b)=>(a.z||0)-(b.z||0)).forEach(d => { canvas.appendChild(makeCard(d)); cardCount++; });
   if (data.drawings) data.drawings.forEach(restoreDrawing);
+  ensureDefaultCollection();
 }
 
 // ── Firestore save ──
@@ -3316,7 +3720,7 @@ function snapshotCurrent(){
   const frames=[...canvas.querySelectorAll('.frame-el')].map(frameToData);
   const drawings=[...drawSVG.querySelectorAll('[data-drawing]')].map(drawingToData).filter(Boolean);
   const boardName=document.getElementById('board-name').value;
-  return { cards, frames, drawings, boardName, panX, panY, scale, gridMode, isDark, panSpeed };
+  return { cards, frames, drawings, boardName, panX, panY, scale, gridMode, isDark, panSpeed, collections: boardCollections };
 }
 
 function save(){
@@ -3546,6 +3950,8 @@ async function bootBoard() {
   applyGridMode();
   applyTransform();
   updateHistoryBtns();
+  // Handle any pending Web Share Target or Instagram import
+  setTimeout(checkPendingImports, 500);
 }
 
 // ─────────────────────────────────────────────
