@@ -1846,6 +1846,11 @@ var fbUser = null;
 try {
   fbApp  = firebase.initializeApp(firebaseConfig);
   fbDb   = firebase.firestore(fbApp);
+  // CRITICAL: Firestore's .set() throws on `undefined` field values.
+  // Card serialization can emit undefined (e.g. shape/originalUrl/color on non-shape cards),
+  // which made every post-edit save fail. This setting tells Firestore to drop undefined
+  // fields instead of throwing. Must be set before any read/write.
+  try { fbDb.settings({ ignoreUndefinedProperties: true }); } catch(se){ console.warn('[Firestore] settings() failed:', se.message); }
   fbAuth = firebase.auth(fbApp);
   console.log('[Firebase] initialized');
 } catch(e) {
@@ -3739,33 +3744,92 @@ function applyBoardState(data) {
 }
 
 // ── Firestore save (source of truth for signed-in users) ──
+// Deep-clean a value so it is safe for Firestore:
+//  • removes `undefined` (Firestore .set() throws on undefined — the root cause of "Save failed")
+//  • drops functions/symbols
+//  • recurses through arrays and plain objects
+// localStorage tolerated undefined (JSON.stringify drops it), which is why local saves worked
+// while Firestore saves failed after every edit.
+function sanitizeForFirestore(value) {
+  if (value === null) return null;
+  if (Array.isArray(value)) {
+    return value.map(sanitizeForFirestore).filter(v => v !== undefined);
+  }
+  if (typeof value === 'object') {
+    const out = {};
+    for (const k in value) {
+      if (!Object.prototype.hasOwnProperty.call(value, k)) continue;
+      const cleaned = sanitizeForFirestore(value[k]);
+      if (cleaned !== undefined) out[k] = cleaned;
+    }
+    return out;
+  }
+  if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'undefined') return undefined;
+  if (typeof value === 'number' && !isFinite(value)) return null; // NaN/Infinity are invalid in Firestore
+  return value;
+}
+
 async function saveBoardData(boardId, snap) {
-  if (!fbDb || !fbUser) { setSyncStatus('offline'); return; }
+  if (!fbDb || !fbUser) { setSyncStatus('offline'); return false; }
   // GUARD: never let an empty board overwrite Firestore before the remote board has loaded
   if (!hasLoadedRemoteBoard) {
     console.log('[Sync Guard] blocked Firestore save before remote load');
-    return;
+    return false;
   }
-  const nCards = (snap.cards||[]).length;
+  const path = 'users/' + fbUser.uid + '/boards/' + boardId;
+  const nCards = (snap.cards || []).length;
+  const nCols  = (snap.collections || []).length;
+  // Sanitize so undefined / NaN never reach Firestore
+  const payload = sanitizeForFirestore({ ...snap, schemaVersion: SCHEMA_VERSION });
+  const size = JSON.stringify(payload).length;
   try {
-    const size = JSON.stringify(snap).length;
     if (size > 900000) {
       console.warn('[Firestore] board too large (' + Math.round(size/1024) + ' KB) — saved locally only. Use image URLs instead of base64 file uploads for cross-device sync.');
       setSyncStatus('offline');
-      return;
+      return false;
     }
     setSyncStatus('saving');
-    console.log('[Firestore] saving board with ' + nCards + ' cards → users/' + fbUser.uid + '/boards/' + boardId);
+    console.log('[Firestore] saving board → ' + path + ' | cards=' + nCards + ' collections=' + nCols + ' size=' + size + 'B');
+    payload._updatedAt = firebase.firestore.FieldValue.serverTimestamp();
     await fbDb.collection('users').doc(fbUser.uid)
       .collection('boards').doc(boardId)
-      .set({ ...snap, schemaVersion: SCHEMA_VERSION, _updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    console.log('[Firestore] save success');
+      .set(payload);
+    console.log('[Firestore] save success → ' + path);
     setSyncStatus('saved');
+    return true;
   } catch(e) {
-    console.warn('[Firestore] save failed:', e.message);
+    // Surface the REAL Firestore error, not just "Save failed"
+    console.error('[Firestore] save failed → ' + path +
+      '\n  code: ' + (e.code || '(none)') +
+      '\n  message: ' + (e.message || e) +
+      '\n  cards: ' + nCards + ' | collections: ' + nCols + ' | payload: ' + size + ' bytes');
     setSyncStatus(navigator.onLine ? 'error' : 'offline');
+    return false;
   }
 }
+
+// Debug helper — run in DevTools console to force a save and see full diagnostics:
+//   await window.__boardDebugSave()
+window.__boardDebugSave = async function() {
+  const snap = (typeof snapshotCurrent === 'function') ? snapshotCurrent() : null;
+  const info = {
+    signedIn: !!fbUser,
+    uid: fbUser ? fbUser.uid : null,
+    boardId: typeof currentBoardId !== 'undefined' ? currentBoardId : null,
+    path: fbUser ? ('users/' + fbUser.uid + '/boards/' + currentBoardId) : null,
+    hasLoadedRemoteBoard: typeof hasLoadedRemoteBoard !== 'undefined' ? hasLoadedRemoteBoard : null,
+    online: navigator.onLine,
+    cards: snap ? (snap.cards||[]).length : null,
+    collections: snap ? (snap.collections||[]).length : null,
+    rawPayloadBytes: snap ? JSON.stringify(snap).length : null,
+    cleanPayloadBytes: snap ? JSON.stringify(sanitizeForFirestore(snap)).length : null
+  };
+  console.log('[Debug] board state:', info);
+  if (!snap) { console.warn('[Debug] no snapshot available'); return info; }
+  const ok = await saveBoardData(currentBoardId, snap);
+  console.log('[Debug] forced save result:', ok ? 'SUCCESS' : 'FAILED (see error above)');
+  return info;
+};
 
 // ── Firestore load — Firestore-first, localStorage fallback ──
 async function loadBoardData(boardId) {
@@ -3804,7 +3868,7 @@ async function migrateLocalDataToFirestore() {
       if (!existing.exists) {
         const size = JSON.stringify(local).length;
         if (size < 900000) {
-          await ref.set({ ...local, _updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          await ref.set({ ...sanitizeForFirestore(local), _updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
           console.log('[Firebase] Board migrated from local storage to Firestore:', b.id);
         } else {
           console.warn('[Firebase] Skipped migration for', b.id, '— board too large (' + Math.round(size/1024) + ' KB)');
@@ -3818,7 +3882,7 @@ async function migrateLocalDataToFirestore() {
   try {
     await fbDb.collection('users').doc(fbUser.uid)
       .collection('meta').doc('index')
-      .set({ boards: idx, _updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      .set({ boards: sanitizeForFirestore(idx), _updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     console.log('[Firebase] Board index saved to Firestore');
   } catch(e) { console.warn('[Firebase] Index save failed:', e.message); }
 }
