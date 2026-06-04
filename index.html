@@ -96,6 +96,17 @@ body::before {
 #board-root {
   position: fixed; inset: 0; overflow: hidden;
   cursor: default;
+  /* Custom pan/zoom on the canvas — disable browser's native touch scroll/zoom here.
+     Interactive children (inputs, textareas, buttons, iframes) re-enable normal touch below. */
+  touch-action: none;
+}
+/* Re-enable normal touch behaviour for interactive elements so typing,
+   tapping links, scrolling embeds, and the keyboard all work on mobile. */
+#board-root input, #board-root textarea, #board-root button, #board-root a,
+#board-root select, #board-root iframe, #board-root video,
+#board-root [contenteditable="true"],
+.sticky-textarea, .text-card-area, .comment-area, .card-label {
+  touch-action: auto;
 }
 #board-root.grid-dots {
   background-image: radial-gradient(circle, var(--dot-color) 0.9px, transparent 1px);
@@ -1240,6 +1251,30 @@ body.auth-required #login-screen { display: flex; }
   max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+/* ── Sync status indicator ── */
+#sync-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-family: 'DM Sans', sans-serif;
+  color: var(--fg-muted, rgba(243,241,236,0.5));
+  padding: 3px 9px; border-radius: 8px; white-space: nowrap;
+  background: var(--glass-tint, rgba(255,255,255,0.05));
+  border: 1px solid transparent;
+  transition: color .2s, background .2s, border-color .2s; user-select: none;
+}
+#sync-status::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor; flex-shrink: 0;
+}
+#sync-status[data-state="saving"] { color: #e0a93b; }
+#sync-status[data-state="saved"]  { color: #4caf72; }
+#sync-status[data-state="offline"]{ color: var(--fg-muted, rgba(243,241,236,0.45)); }
+#sync-status[data-state="error"]  { color: #ff6b6b; border-color: rgba(255,80,80,.25); background: rgba(255,80,80,.08); }
+#sync-status[data-state="saving"]::before { animation: spin .8s linear infinite; border: 1.5px solid currentColor; border-top-color: transparent; background: transparent; }
+@media (max-width: 640px) {
+  #sync-status .sync-label { display: none; }
+  #sync-status { padding: 4px; }
+}
+
 /* ══════════════════════════════════════════
    INSTAGRAM IMPORT DIALOG
    ══════════════════════════════════════════ */
@@ -1439,6 +1474,8 @@ body.auth-required #login-screen { display: flex; }
   <button class="top-icon-btn" id="btn-redo" title="Redo (⌘⇧Z)" disabled>
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 6H8a4 4 0 100 8h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 6l-3-3M14 6l-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
   </button>
+  <!-- Sync status indicator -->
+  <span id="sync-status" data-state="saved" title="Sync status"><span class="sync-label">Saved</span></span>
   <!-- User area (shown when signed in) -->
   <div class="user-area" id="user-area">
     <img id="user-avatar" class="user-avatar" src="" alt="" style="display:none">
@@ -1913,9 +1950,13 @@ if (fbAuth) {
 window.addEventListener('online', async function() {
   if (!fbUser || typeof currentBoardId === 'undefined' || !currentBoardId) return;
   console.log('[Firebase] Back online — syncing to Firestore');
+  if (typeof setSyncStatus === 'function') setSyncStatus('saving');
   if (typeof saveBoardData === 'function' && typeof snapshotCurrent === 'function') {
     await saveBoardData(currentBoardId, snapshotCurrent());
   }
+});
+window.addEventListener('offline', function() {
+  if (typeof setSyncStatus === 'function') setSyncStatus('offline');
 });
 </script>
 
@@ -1945,6 +1986,24 @@ let gridMode = 'dots'; // 'off' | 'dots' | 'lines'
 let isDark = true;
 let panSpeed = 1;
 let boardCollections = []; // [{ id, name, createdAt, updatedAt }]
+
+// ── Sync guards (prevent empty-board overwriting Firestore at startup) ──
+let hasLoadedRemoteBoard = false; // becomes true only after the first real load completes
+let isApplyingState = false;      // true while a board is loading/being applied — blocks saves
+const SCHEMA_VERSION = 2;         // bump when board state shape changes
+
+// ── Sync status indicator ──
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const labels = { saving:'Saving…', saved:'Saved', offline:'Offline', error:'Save failed' };
+  el.dataset.state = state;
+  const lbl = el.querySelector('.sync-label');
+  if (lbl) lbl.textContent = labels[state] || state;
+  el.title = { saving:'Saving to your account…', saved:'All changes saved to your account',
+               offline:'Offline — saved on this device, will sync when online',
+               error:'Could not save to cloud — saved on this device' }[state] || '';
+}
 
 const undoStack = [], redoStack = [];
 const MAX_HISTORY = 50;
@@ -2203,6 +2262,102 @@ window.addEventListener('mouseup', () => {
   isPanning = false; boardRoot.classList.remove('panning');
   boardRoot.style.cursor = ''; save();
 });
+
+// ─────────────────────────────────────────────
+// TOUCH NAVIGATION (mobile — laptop-trackpad-like)
+//  • 1 finger on empty canvas (select/hand) → pan
+//  • 1 finger on a card/frame              → drag/select (reuses mouse logic)
+//  • 1 finger with a creation tool          → draw/create (reuses mouse logic)
+//  • 2 fingers                              → pinch-zoom + pan
+//  • interactive elements (inputs, buttons, links, embeds) → native touch
+// Desktop mouse/trackpad behaviour is untouched.
+// ─────────────────────────────────────────────
+(function setupTouchNav(){
+  const INTERACTIVE = 'input,textarea,button,a,select,iframe,video,[contenteditable="true"]';
+  let mode = null;          // 'pan' | 'synth' | 'pinch'
+  let startPan = null;      // { x, y, panX, panY }
+  let pinch = null;         // { dist, midX, midY }
+  let synthTarget = null;   // element receiving synthesized mouse events
+
+  const isInteractive = el => el && el.closest && el.closest(INTERACTIVE);
+  const dist = (a,b) => Math.hypot(b.clientX-a.clientX, b.clientY-a.clientY);
+  const mid  = (a,b) => ({ x:(a.clientX+b.clientX)/2, y:(a.clientY+b.clientY)/2 });
+  function synth(type, pt, target){
+    target.dispatchEvent(new MouseEvent(type, {
+      bubbles:true, cancelable:true, view:window,
+      clientX:pt.clientX, clientY:pt.clientY, button:0
+    }));
+  }
+
+  boardRoot.addEventListener('touchstart', e => {
+    // Two fingers → pinch/zoom/pan
+    if (e.touches.length === 2){
+      if (mode === 'synth' && synthTarget){ synth('mouseup', e.touches[0], window); synthTarget = null; }
+      mode = 'pinch';
+      const m = mid(e.touches[0], e.touches[1]);
+      pinch = { dist: dist(e.touches[0], e.touches[1]), midX:m.x, midY:m.y };
+      e.preventDefault();
+      return;
+    }
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const target = document.elementFromPoint(t.clientX, t.clientY) || e.target;
+    if (isInteractive(target)) { mode = null; return; }   // let native touch handle typing/links/embeds
+    const onItem = target.closest && target.closest('.card, .frame-el, .card-resize, .frame-resize');
+    if (onItem || (activeTool !== 'select' && activeTool !== 'hand')) {
+      // Reuse all existing mouse logic for card drag/select/resize AND creation tools
+      mode = 'synth'; synthTarget = target;
+      synth('mousedown', t, target);
+      e.preventDefault();
+    } else {
+      // Empty canvas with select/hand tool → one-finger pan
+      mode = 'pan';
+      startPan = { x:t.clientX, y:t.clientY, panX, panY };
+      e.preventDefault();
+    }
+  }, { passive:false });
+
+  boardRoot.addEventListener('touchmove', e => {
+    if (mode === 'pinch' && e.touches.length >= 2){
+      const m = mid(e.touches[0], e.touches[1]);
+      const d = dist(e.touches[0], e.touches[1]);
+      const r = boardRoot.getBoundingClientRect();
+      if (pinch.dist > 0) zoomAround(m.x - r.left, m.y - r.top, d / pinch.dist);
+      panX += (m.x - pinch.midX); panY += (m.y - pinch.midY); applyTransform();
+      pinch = { dist:d, midX:m.x, midY:m.y };
+      e.preventDefault(); return;
+    }
+    if (mode === 'synth' && e.touches.length === 1){
+      synth('mousemove', e.touches[0], window);
+      e.preventDefault(); return;
+    }
+    if (mode === 'pan' && e.touches.length === 1){
+      const t = e.touches[0];
+      panX = startPan.panX + (t.clientX - startPan.x);
+      panY = startPan.panY + (t.clientY - startPan.y);
+      applyTransform();
+      e.preventDefault();
+    }
+  }, { passive:false });
+
+  function endTouch(e){
+    if (mode === 'synth' && synthTarget){
+      const ct = (e.changedTouches && e.changedTouches[0]) || { clientX:0, clientY:0 };
+      synth('mouseup', ct, window);
+      synthTarget = null;
+    }
+    if (mode === 'pan' || mode === 'pinch') save();
+    // One finger lifted from a pinch → continue as a pan with the remaining finger
+    if (e.touches && e.touches.length === 1 && mode === 'pinch'){
+      const t = e.touches[0];
+      mode = 'pan'; startPan = { x:t.clientX, y:t.clientY, panX, panY }; pinch = null;
+      return;
+    }
+    if (!e.touches || e.touches.length === 0){ mode = null; pinch = null; startPan = null; }
+  }
+  boardRoot.addEventListener('touchend', endTouch, { passive:false });
+  boardRoot.addEventListener('touchcancel', endTouch, { passive:false });
+})();
 
 document.getElementById('zoom-in').addEventListener('click',  () => { zoomStep(1.2); save(); });
 document.getElementById('zoom-out').addEventListener('click', () => { zoomStep(0.833); save(); });
@@ -3583,44 +3738,56 @@ function applyBoardState(data) {
   ensureDefaultCollection();
 }
 
-// ── Firestore save ──
+// ── Firestore save (source of truth for signed-in users) ──
 async function saveBoardData(boardId, snap) {
-  if (!fbDb || !fbUser) return;
+  if (!fbDb || !fbUser) { setSyncStatus('offline'); return; }
+  // GUARD: never let an empty board overwrite Firestore before the remote board has loaded
+  if (!hasLoadedRemoteBoard) {
+    console.log('[Sync Guard] blocked Firestore save before remote load');
+    return;
+  }
+  const nCards = (snap.cards||[]).length;
   try {
-    // Guard against Firestore's ~1 MB document limit.
-    // Large base64 images (from file uploads) exceed this — they stay in localStorage only.
-    // Tip: use image URLs rather than file uploads for reliable cross-device sync.
     const size = JSON.stringify(snap).length;
     if (size > 900000) {
-      console.warn('[Firebase] Board too large for Firestore (' + Math.round(size / 1024) + ' KB) — saved locally only. Use image URLs instead of file uploads for cross-device sync.');
+      console.warn('[Firestore] board too large (' + Math.round(size/1024) + ' KB) — saved locally only. Use image URLs instead of base64 file uploads for cross-device sync.');
+      setSyncStatus('offline');
       return;
     }
+    setSyncStatus('saving');
+    console.log('[Firestore] saving board with ' + nCards + ' cards → users/' + fbUser.uid + '/boards/' + boardId);
     await fbDb.collection('users').doc(fbUser.uid)
       .collection('boards').doc(boardId)
-      .set({ ...snap, _updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    console.log('[Firebase] Board saved to Firestore');
+      .set({ ...snap, schemaVersion: SCHEMA_VERSION, _updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    console.log('[Firestore] save success');
+    setSyncStatus('saved');
   } catch(e) {
-    console.warn('[Firebase] Firestore save failed, saved locally instead:', e.message);
+    console.warn('[Firestore] save failed:', e.message);
+    setSyncStatus(navigator.onLine ? 'error' : 'offline');
   }
 }
 
-// ── Firestore load — with localStorage fallback ──
+// ── Firestore load — Firestore-first, localStorage fallback ──
 async function loadBoardData(boardId) {
   if (fbDb && fbUser) {
     try {
+      console.log('[Firestore] loading board from users/' + fbUser.uid + '/boards/' + boardId);
       const docSnap = await fbDb.collection('users').doc(fbUser.uid)
         .collection('boards').doc(boardId).get();
       if (docSnap.exists) {
-        console.log('[Firebase] Board loaded from Firestore');
-        return docSnap.data();
+        const data = docSnap.data();
+        console.log('[Firestore] board found (' + ((data.cards||[]).length) + ' cards)');
+        // Cache remote copy locally so offline reloads keep working
+        try { saveLocalFallback(boardId, data); } catch(e){}
+        return data;
       }
-      console.log('[Firebase] No Firestore board found, checking local...');
+      console.log('[Firestore] no board found for ' + boardId + ', checking local…');
     } catch(e) {
-      console.warn('[Firebase] Firestore load failed, falling back to local:', e.message);
+      console.warn('[Firestore] load failed, falling back to local:', e.message);
     }
   }
   const local = loadLocalFallback(boardId);
-  if (local) { console.log('[Firebase] Board loaded from local fallback'); return local; }
+  if (local) { console.log('[Local] loaded fallback for ' + boardId); return local; }
   return null;
 }
 
@@ -3685,7 +3852,29 @@ async function syncIndexFromFirestore() {
 // ─────────────────────────────────────────────
 const IDX_KEY = 'vboards-index';
 const CUR_KEY = 'vboard-current';
+const DEFAULT_BOARD_ID = 'default';   // fixed ID so desktop+mobile share users/{uid}/boards/default
 let currentBoardId = null;
+
+// Migration: make the primary board use the fixed ID 'default' so it syncs
+// across devices. Any older random-ID primary board is copied to 'default'.
+// Never deletes data destructively without first copying it.
+function consolidateToDefault(){
+  const idx = loadIndex();
+  if (idx.some(b => b.id === DEFAULT_BOARD_ID)) return;  // already migrated
+  if (idx.length === 0) return;                          // nothing to migrate
+  // Pick the most-recently-modified board as the primary
+  const primary = idx.slice().sort((a,b)=>(b.lastModified||0)-(a.lastModified||0))[0];
+  const raw = localStorage.getItem('vboard-'+primary.id);
+  if (!raw) return;
+  // Copy its data to the 'default' slot
+  localStorage.setItem('vboard-'+DEFAULT_BOARD_ID, raw);
+  const newEntry = { ...primary, id: DEFAULT_BOARD_ID };
+  const rest = idx.filter(b => b.id !== primary.id && b.id !== DEFAULT_BOARD_ID);
+  saveIndex([newEntry, ...rest]);
+  localStorage.removeItem('vboard-'+primary.id);
+  localStorage.setItem(CUR_KEY, DEFAULT_BOARD_ID);
+  console.log('[Migration] consolidated primary board ' + primary.id + ' → ' + DEFAULT_BOARD_ID);
+}
 
 function loadIndex(){
   try { return JSON.parse(localStorage.getItem(IDX_KEY)||'[]'); }
@@ -3725,19 +3914,32 @@ function snapshotCurrent(){
 
 function save(){
   if (!currentBoardId) return;
+  // Don't save while a board is loading/being applied (prevents partial/empty writes)
+  if (isApplyingState) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
+    if (isApplyingState) return;
     const snap = snapshotCurrent();
-    // 1. Always save locally first — data is never lost
+    // 1. ALWAYS save to local fallback first — data is never lost, even offline
     saveLocalFallback(currentBoardId, snap);
+    console.log('[Local] saved fallback (' + (snap.cards||[]).length + ' cards)');
     updateIndexEntry(currentBoardId, {
       name: snap.boardName || 'Untitled',
       lastModified: Date.now(),
       cardCount: snap.cards.length + snap.frames.length
     });
-    // 2. Debounced Firestore save (~1 s after last change)
-    clearTimeout(_fsTimer);
-    _fsTimer = setTimeout(() => saveBoardData(currentBoardId, snap), 700);
+    // 2. Debounced Firestore save — source of truth for signed-in users (800–1200ms)
+    if (fbDb && fbUser) {
+      if (!hasLoadedRemoteBoard) {
+        console.log('[Sync Guard] blocked empty startup save before remote load');
+        return;
+      }
+      setSyncStatus('saving');
+      clearTimeout(_fsTimer);
+      _fsTimer = setTimeout(() => saveBoardData(currentBoardId, snap), 900);
+    } else {
+      setSyncStatus('offline');
+    }
   }, 300);
 }
 
@@ -3752,22 +3954,39 @@ function clearCanvas(){
 }
 
 async function loadBoardById(id){
+  isApplyingState = true;          // block any save() while we load + apply
   currentBoardId = id;
   localStorage.setItem(CUR_KEY, id);
   clearCanvas();
-  const data = await loadBoardData(id);   // Firestore-first, localStorage fallback
-  if (!data) { updateEmpty(); pushHistory(); return; }
-  try { applyBoardState(data); } catch(err) { console.warn('Board load error', err); }
+  boardCollections = [];
+  let data = null;
+  try {
+    data = await loadBoardData(id);   // Firestore-first, localStorage fallback
+  } catch(err) {
+    console.warn('[Load] error fetching board', err);
+  }
+  if (data) {
+    try {
+      applyBoardState(data);
+      console.log('[Firestore] applying remote board with ' + ((data.cards||[]).length) + ' cards');
+    } catch(err) { console.warn('[Load] apply error', err); }
+  } else {
+    // Brand-new empty board
+    ensureDefaultCollection();
+  }
   updateEmpty();
+  isApplyingState = false;
+  hasLoadedRemoteBoard = true;      // a real load attempt has now completed — saves are safe
+  setSyncStatus(fbUser ? 'saved' : 'offline');
   pushHistory();
 }
 
-function createBoard(){
-  const id = newBoardId();
+function createBoard(forcedId){
   const idx = loadIndex();
-  const n = idx.length + 1;
-  const name = 'Board ' + n;
-  localStorage.setItem('vboard-'+id, JSON.stringify({ cards:[], frames:[], drawings:[], boardName:name, panX:0, panY:0, scale:1, gridMode:'dots', isDark:true, panSpeed:1 }));
+  // First board uses the fixed 'default' ID so it syncs across devices
+  const id = forcedId || (idx.length === 0 ? DEFAULT_BOARD_ID : newBoardId());
+  const name = idx.length === 0 ? 'My Board' : 'Board ' + (idx.length + 1);
+  localStorage.setItem('vboard-'+id, JSON.stringify({ cards:[], frames:[], drawings:[], boardName:name, panX:0, panY:0, scale:1, gridMode:'dots', isDark:true, panSpeed:1, collections:[] }));
   idx.push({ id, name, lastModified: Date.now(), cardCount: 0 });
   saveIndex(idx);
   return id;
@@ -3937,16 +4156,38 @@ document.getElementById('import-file-input').addEventListener('change', e => {
 // ─────────────────────────────────────────────
 async function bootBoard() {
   migrateLegacy();
+  consolidateToDefault();   // ensure the primary board uses the fixed 'default' ID
   const idx = loadIndex();
   const desired = localStorage.getItem(CUR_KEY);
-  if (idx.length === 0) {
-    const id = createBoard();
-    await loadBoardById(id);
-  } else if (desired && idx.some(b => b.id === desired)) {
-    await loadBoardById(desired);
+
+  if (fbDb && fbUser) {
+    // ── Signed in: Firestore is the source of truth ──
+    // Reopen the last board if it's known, otherwise open the synced 'default' board.
+    if (desired && idx.some(b => b.id === desired)) {
+      await loadBoardById(desired);
+    } else {
+      // Fresh device (no local index) OR no selection → load the cross-device default.
+      // loadBoardById → loadBoardData fetches users/{uid}/boards/default from Firestore first.
+      await loadBoardById(DEFAULT_BOARD_ID);
+      // Make sure the default board is registered in the local index
+      if (!loadIndex().some(b => b.id === DEFAULT_BOARD_ID)) {
+        const idx2 = loadIndex();
+        idx2.unshift({ id: DEFAULT_BOARD_ID, name: document.getElementById('board-name').value || 'My Board', lastModified: Date.now(), cardCount: snapshotCurrent().cards.length });
+        saveIndex(idx2);
+      }
+    }
   } else {
-    showPicker();
+    // ── Local-only mode (Firebase unavailable) ──
+    if (idx.length === 0) {
+      const id = createBoard();           // creates 'default'
+      await loadBoardById(id);
+    } else if (desired && idx.some(b => b.id === desired)) {
+      await loadBoardById(desired);
+    } else {
+      await loadBoardById(idx[0].id);
+    }
   }
+
   applyGridMode();
   applyTransform();
   updateHistoryBtns();
