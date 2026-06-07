@@ -2878,6 +2878,32 @@ function loadScriptOnce(state, src){
 const _pinit = { flag:'_pinit_ok', pending:null };
 const _insta = { flag:'_insta_ok', pending:null };
 
+// Throttled auto-preview queue. It makes supported cards behave as if the user
+// clicked "Preview embed", without freezing large boards by loading everything at once.
+const autoEmbedQueue = [];
+let autoEmbedRunning = 0;
+const AUTO_EMBED_CONCURRENCY = 2;
+const AUTO_EMBED_GAP = 350;
+function enqueueAutoEmbed(task) {
+  if (typeof task !== 'function') return;
+  autoEmbedQueue.push(task);
+  runAutoEmbedQueue();
+}
+function runAutoEmbedQueue() {
+  while (autoEmbedRunning < AUTO_EMBED_CONCURRENCY && autoEmbedQueue.length) {
+    const task = autoEmbedQueue.shift();
+    autoEmbedRunning++;
+    setTimeout(async () => {
+      try { await task(); }
+      catch(e) { console.warn('[Embed] auto preview failed:', e?.message || e); }
+      finally {
+        autoEmbedRunning--;
+        runAutoEmbedQueue();
+      }
+    }, AUTO_EMBED_GAP);
+  }
+}
+
 async function ogScrape(url){
   try{
     const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(6000)});
@@ -3022,7 +3048,7 @@ async function hydrateInstagramPreview(body, url, lbl, card){
     if (!card.dataset.importedTitle) card.dataset.importedTitle = meta.title;
   }
   if (meta.description) card.dataset.previewDescription = meta.description;
-  renderInstagramPreview(body, url, lbl, card, meta);
+  if (!body.querySelector('.ig-live-host')) renderInstagramPreview(body, url, lbl, card, meta);
   saveInstagramPreviewWhenReady();
 }
 function saveInstagramPreviewWhenReady(tries=0){
@@ -3034,9 +3060,15 @@ function saveInstagramPreviewWhenReady(tries=0){
   save();
 }
 function loadInstagramEmbed(body, url, lbl, card){
-  // Stable saved preview is the default. The live Instagram embed is opt-in only.
+  // Stable saved preview is rendered first so the card is never visually empty.
+  // The live Instagram embed is auto-tried through the throttled queue below.
   renderInstagramPreview(body, url, lbl, card);
   hydrateInstagramPreview(body, url, lbl, card);
+  enqueueAutoEmbed(() => {
+    if (!body.isConnected || body.dataset.igLiveAttempted === '1') return;
+    body.dataset.igLiveAttempted = '1';
+    return tryLiveInstagramEmbed(body, url, lbl, card);
+  });
 }
 async function tryLiveInstagramEmbed(body, url, lbl, card){
   const fallback = () => renderInstagramPreview(body, url, lbl, card);
@@ -3176,6 +3208,12 @@ function viewportCenter() {
   const vw=boardRoot.offsetWidth, vh=boardRoot.offsetHeight;
   return { x:(vw/2-panX)/scale-160, y:(vh/2-panY)/scale-110 };
 }
+function activateIframeEmbed(ifr, overlay, src) {
+  if (!ifr || ifr.dataset.loaded === '1') return;
+  ifr.dataset.loaded = '1';
+  ifr.src = src;
+  overlay?.remove();
+}
 
 function makeCard({ id, type, src, label, x, y, w, h, color, text, shape, originalUrl,
                     collectionId, collectionName, instagramType, importedTitle, importedAt, notes,
@@ -3268,13 +3306,14 @@ function makeCard({ id, type, src, label, x, y, w, h, color, text, shape, origin
     ifr.referrerPolicy='no-referrer-when-downgrade';
     ifr.style.cssText='width:100%;height:100%;border:none;display:block;position:absolute;inset:0;z-index:1';
     overlay.addEventListener('click', e => {
-      e.stopPropagation(); ifr.src = src; overlay.remove();
+      e.stopPropagation(); activateIframeEmbed(ifr, overlay, src);
     }, { once: true });
     overlay.addEventListener('mousedown', e => e.stopPropagation());
     ifr.addEventListener('mousedown', e => e.stopPropagation());
     body.style.position='relative'; body.appendChild(ifr); body.appendChild(overlay);
     // Fetch title + load thumbnail into overlay
     fetchMeta(data.originalUrl||null, src, card.querySelector?.('.card-label'), overlay);
+    enqueueAutoEmbed(() => activateIframeEmbed(ifr, overlay, src));
   } else if (type==='video-file') {
     const vid=document.createElement('video'); vid.src=src; vid.controls=true;
     vid.style.borderRadius='0 0 13px 13px';

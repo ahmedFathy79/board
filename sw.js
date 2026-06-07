@@ -1,9 +1,9 @@
-// Canvas Board — Service Worker v10
+// Canvas Board — Service Worker v11
 // HTML: network-first (always fresh). Static assets: cache-first (fast).
 // Firebase/Firestore: network-only (never cached).
 // /share route: serves index.html so Web Share Target params are handled by JS.
 
-const CACHE = 'vboard-v10';
+const CACHE = 'vboard-v11';
 const SHELL = [
   './',
   './index.html',
