@@ -1364,6 +1364,81 @@ body.auth-required #login-screen { display: flex; }
   border:1px solid rgba(225,48,108,.28); color:#e1306c; white-space:nowrap;
   margin-left:4px; flex-shrink:0;
 }
+.ig-preview-card {
+  width:100%; height:100%; display:flex; flex-direction:column;
+  background:linear-gradient(160deg,rgba(225,48,108,.10),rgba(64,93,230,.08) 45%,rgba(0,0,0,.12));
+}
+.ig-preview-link {
+  flex:1; min-height:0; display:flex; flex-direction:column;
+  color:inherit; text-decoration:none; overflow:hidden;
+}
+.ig-preview-thumb {
+  flex:1; min-height:120px; width:100%; object-fit:cover; display:block;
+  background:rgba(0,0,0,.18);
+}
+.ig-preview-placeholder {
+  flex:1; min-height:120px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:10px;
+  background:
+    radial-gradient(circle at 25% 20%,rgba(255,214,102,.35),transparent 30%),
+    radial-gradient(circle at 75% 18%,rgba(225,48,108,.32),transparent 28%),
+    radial-gradient(circle at 50% 85%,rgba(64,93,230,.28),transparent 34%),
+    rgba(255,255,255,.04);
+  color:var(--fg, #f3f1ec);
+}
+.ig-preview-glyph {
+  width:54px; height:54px; border-radius:16px;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);
+  color:#fff; box-shadow:0 10px 28px rgba(0,0,0,.28);
+}
+.ig-preview-glyph svg { width:27px; height:27px; }
+.ig-preview-meta {
+  padding:12px 13px 10px; display:flex; flex-direction:column; gap:5px;
+  border-top:1px solid var(--glass-border,rgba(255,255,255,.14));
+  background:rgba(0,0,0,.10);
+}
+.ig-preview-source {
+  font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+  color:#e1306c; font-weight:600;
+}
+.ig-preview-title {
+  color:var(--fg,#f3f1ec); font-size:13px; font-weight:500; line-height:1.35;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.ig-preview-url {
+  color:var(--fg-muted,rgba(243,241,236,.55)); font-size:11px; line-height:1.3;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.ig-preview-actions {
+  padding:9px 11px 11px; display:flex; align-items:center; gap:8px;
+  border-top:1px solid var(--glass-border,rgba(255,255,255,.14));
+  background:rgba(0,0,0,.08);
+}
+.ig-open-btn,
+.ig-live-btn,
+.ig-back-btn {
+  border:1px solid var(--glass-border,rgba(255,255,255,.14));
+  border-radius:10px; padding:7px 10px; font-size:11px; line-height:1;
+  color:var(--fg,#f3f1ec); background:var(--glass-tint-hi,rgba(255,255,255,.10));
+  text-decoration:none; cursor:pointer; font-family:'DM Sans',sans-serif;
+}
+.ig-open-btn:hover,
+.ig-live-btn:hover,
+.ig-back-btn:hover { background:rgba(255,255,255,.18); }
+.ig-live-btn { margin-left:auto; color:#e1306c; }
+.ig-live-host {
+  width:100%; height:100%; overflow:auto; background:#fff;
+  display:flex; justify-content:center; padding:0; position:relative;
+}
+.ig-live-toolbar {
+  position:absolute; top:8px; right:8px; z-index:3; display:flex; gap:6px;
+}
+.ig-live-message {
+  position:absolute; left:12px; right:12px; bottom:12px; z-index:3;
+  padding:8px 10px; border-radius:10px; background:rgba(0,0,0,.68);
+  color:#fff; font-size:11px; line-height:1.35; pointer-events:none;
+}
 
 /* ── Mobile-friendly improvements ── */
 @media (max-width: 640px) {
@@ -2856,32 +2931,155 @@ async function loadPinterestEmbed(body, url, lbl){
   }, 1200);
 }
 
-async function loadInstagramEmbed(body, url, lbl){
-  body.innerHTML='<div class="card-loading">Loading…</div>';
+function escHTML(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function instagramDisplayTitle(card, url){
+  return card?.dataset.previewTitle
+      || card?.dataset.importedTitle
+      || card?.dataset.collectionName
+      || (getInstagramType(url)==='reel' ? 'Instagram reel' : 'Instagram post');
+}
+function instagramPreviewMetaFromCard(card){
+  if (!card) return {};
+  return {
+    image: card.dataset.previewImage || '',
+    title: card.dataset.previewTitle || '',
+    description: card.dataset.previewDescription || '',
+    username: card.dataset.previewUsername || '',
+    fetchedAt: card.dataset.previewFetchedAt || ''
+  };
+}
+async function fetchInstagramPreviewMetadata(url){
+  let og = await ogScrape(url);
+  if (!og?.image && !og?.title) {
+    try {
+      const r = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true`, { signal: AbortSignal.timeout(7000) });
+      const md = await r.json();
+      if (md.status === 'success' && md.data) {
+        og = {
+          image: md.data.image?.url || md.data.screenshot?.url || '',
+          title: md.data.title || '',
+          description: md.data.description || ''
+        };
+      }
+    } catch {}
+  }
+  return {
+    image: og?.image || '',
+    title: og?.title || '',
+    description: og?.description || '',
+    fetchedAt: Date.now()
+  };
+}
+function renderInstagramPreview(body, url, lbl, card, options={}){
+  const meta = instagramPreviewMetaFromCard(card);
+  const title = options.title || meta.title || instagramDisplayTitle(card, url);
+  const desc = options.description || meta.description || '';
+  const image = options.image || meta.image || '';
+  const type = card?.dataset.instagramType || getInstagramType(url);
+  const collection = card?.dataset.collectionName || '';
+  if (options.title && lbl && (!lbl.textContent || lbl.textContent === 'Instagram' || lbl.textContent === collection)) {
+    lbl.textContent = options.title;
+  }
+  body.innerHTML = `
+    <div class="ig-preview-card" data-stable-instagram-preview="1">
+      <a class="ig-preview-link" href="${escHTML(url)}" target="_blank" rel="noopener" title="Open on Instagram">
+        ${image
+          ? `<img class="ig-preview-thumb" src="${escHTML(image)}" alt="${escHTML(title)}" draggable="false">`
+          : `<div class="ig-preview-placeholder">
+               <div class="ig-preview-glyph" aria-hidden="true">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>
+               </div>
+               <div class="ig-preview-source">Instagram</div>
+             </div>`}
+        <div class="ig-preview-meta">
+          <div class="ig-preview-source">Instagram ${escHTML(type)}</div>
+          <div class="ig-preview-title">${escHTML(title)}</div>
+          ${collection ? `<div class="ig-preview-url">${escHTML(collection)}</div>` : ''}
+          <div class="ig-preview-url">${escHTML(url)}</div>
+          ${desc ? `<div class="ig-preview-url">${escHTML(desc)}</div>` : ''}
+        </div>
+      </a>
+      <div class="ig-preview-actions">
+        <a class="ig-open-btn" href="${escHTML(url)}" target="_blank" rel="noopener">Open on Instagram</a>
+        <button class="ig-live-btn" type="button">Preview embed</button>
+      </div>
+    </div>`;
+  body.querySelectorAll('a,button').forEach(el=>el.addEventListener('mousedown',e=>e.stopPropagation()));
+  body.querySelector('.ig-live-btn')?.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    tryLiveInstagramEmbed(body, url, lbl, card);
+  });
+}
+async function hydrateInstagramPreview(body, url, lbl, card){
+  if (!card || card.dataset.previewFetchedAt) return;
+  const meta = await fetchInstagramPreviewMetadata(url);
+  card.dataset.previewFetchedAt = String(meta.fetchedAt || Date.now());
+  if (meta.image) card.dataset.previewImage = meta.image;
+  if (meta.title) {
+    card.dataset.previewTitle = meta.title;
+    if (!card.dataset.importedTitle) card.dataset.importedTitle = meta.title;
+  }
+  if (meta.description) card.dataset.previewDescription = meta.description;
+  renderInstagramPreview(body, url, lbl, card, meta);
+  saveInstagramPreviewWhenReady();
+}
+function saveInstagramPreviewWhenReady(tries=0){
+  if (typeof save !== 'function') return;
+  if (typeof isApplyingState !== 'undefined' && isApplyingState && tries < 20) {
+    setTimeout(() => saveInstagramPreviewWhenReady(tries + 1), 300);
+    return;
+  }
+  save();
+}
+function loadInstagramEmbed(body, url, lbl, card){
+  // Stable saved preview is the default. The live Instagram embed is opt-in only.
+  renderInstagramPreview(body, url, lbl, card);
+  hydrateInstagramPreview(body, url, lbl, card);
+}
+async function tryLiveInstagramEmbed(body, url, lbl, card){
+  const fallback = () => renderInstagramPreview(body, url, lbl, card);
+  body.innerHTML='<div class="card-loading">Loading Instagram preview…</div>';
   const host=document.createElement('div');
-  host.style.cssText='width:100%;height:100%;overflow:auto;background:#fff;display:flex;justify-content:center;padding:0';
-  host.innerHTML=`<blockquote class="instagram-media" data-instgrm-permalink="${url}" data-instgrm-version="14" style="background:#FFF;border:0;margin:0;max-width:540px;min-width:300px;padding:0;width:100%"><a href="${url}"></a></blockquote>`;
+  host.className='ig-live-host';
+  host.innerHTML=`
+    <div class="ig-live-toolbar"><button class="ig-back-btn" type="button">Back</button></div>
+    <blockquote class="instagram-media" data-instgrm-permalink="${escHTML(url)}" data-instgrm-version="14" style="background:#FFF;border:0;margin:0;max-width:540px;min-width:300px;padding:0;width:100%"><a href="${escHTML(url)}"></a></blockquote>
+    <div class="ig-live-message">Trying Instagram live embed. Saved preview will return if Instagram blocks it.</div>`;
   body.innerHTML=''; body.appendChild(host);
-  await loadScriptOnce(_insta, 'https://www.instagram.com/embed.js');
-  const process = ()=>{ if (window.instgrm?.Embeds?.process) try{ window.instgrm.Embeds.process(); }catch{} };
-  process();
-  setTimeout(process, 250);
-  // Fallback to og:image scrape if no iframe appears
-  setTimeout(async ()=>{
-    if (host.querySelector('iframe')) return;
-    const og = await ogScrape(url);
-    if (og?.image){
-      if (og.title && lbl) lbl.textContent = og.title;
-      body.innerHTML = `
-        <a href="${url}" target="_blank" rel="noopener" class="pin-preview-link">
-          <img src="${og.image}" class="pin-preview-img" draggable="false"/>
-          <div class="pin-preview-title">${(og.title||'Instagram').replace(/</g,'&lt;')}</div>
-        </a>`;
-      body.querySelector('a').addEventListener('mousedown',e=>e.stopPropagation());
-    } else {
-      renderLinkCard(body, url, 'Instagram');
+  host.querySelector('.ig-back-btn')?.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); fallback(); });
+  host.querySelectorAll('a,button').forEach(el=>el.addEventListener('mousedown',e=>e.stopPropagation()));
+  let settled = false;
+  const looksGeneric = () => {
+    const text = (host.textContent || '').replace(/\s+/g,' ').trim().toLowerCase();
+    return !host.querySelector('iframe') && (
+      text.includes('view this post on instagram')
+      || (/\bopen\b/.test(text) && !host.querySelector('blockquote.instagram-media'))
+    );
+  };
+  const scheduleFallback = (delay) => setTimeout(() => {
+    if (settled) return;
+    if (!host.querySelector('iframe') || looksGeneric()) {
+      settled = true; fallback();
     }
-  }, 2500);
+  }, delay);
+  try {
+    await loadScriptOnce(_insta, 'https://www.instagram.com/embed.js');
+    const process = ()=>{ if (window.instgrm?.Embeds?.process) try{ window.instgrm.Embeds.process(); }catch{} };
+    process();
+    setTimeout(process, 250);
+    const obs = new MutationObserver(() => {
+      if (settled) return;
+      if (looksGeneric()) { settled = true; obs.disconnect(); fallback(); }
+    });
+    obs.observe(host, { childList:true, subtree:true, characterData:true });
+    scheduleFallback(3500);
+    scheduleFallback(12000);
+    setTimeout(() => { try { obs.disconnect(); } catch {} }, 30000);
+  } catch {
+    fallback();
+  }
 }
 
 // Fetch title + thumbnail for iframe embeds (YouTube, Vimeo, TikTok, etc.)
@@ -2980,9 +3178,11 @@ function viewportCenter() {
 }
 
 function makeCard({ id, type, src, label, x, y, w, h, color, text, shape, originalUrl,
-                    collectionId, collectionName, instagramType, importedTitle, importedAt, notes }) {
+                    collectionId, collectionName, instagramType, importedTitle, importedAt, notes,
+                    previewImage, previewTitle, previewDescription, previewUsername, previewFetchedAt }) {
   const data = { id, type, src, label, x, y, w, h, color, text, shape, originalUrl,
-                 collectionId, collectionName, instagramType, importedTitle, importedAt, notes };
+                 collectionId, collectionName, instagramType, importedTitle, importedAt, notes,
+                 previewImage, previewTitle, previewDescription, previewUsername, previewFetchedAt };
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.id = id; card.dataset.type = type; card.dataset.src = src||'';
@@ -2994,6 +3194,11 @@ function makeCard({ id, type, src, label, x, y, w, h, color, text, shape, origin
   if (importedTitle)  card.dataset.importedTitle  = importedTitle;
   if (importedAt)     card.dataset.importedAt     = String(importedAt);
   if (notes)          card.dataset.notes          = notes;
+  if (previewImage)       card.dataset.previewImage       = previewImage;
+  if (previewTitle)       card.dataset.previewTitle       = previewTitle;
+  if (previewDescription) card.dataset.previewDescription = previewDescription;
+  if (previewUsername)    card.dataset.previewUsername    = previewUsername;
+  if (previewFetchedAt)   card.dataset.previewFetchedAt   = String(previewFetchedAt);
   if (color) card.classList.add('sticky', `sticky-${color}`);
   if (type==='text')    card.classList.add('text-card');
   if (type==='shape')   card.classList.add('shape-card');
@@ -3080,7 +3285,7 @@ function makeCard({ id, type, src, label, x, y, w, h, color, text, shape, origin
   } else if (type==='pinterest') {
     loadPinterestEmbed(body, src, card.querySelector?.('.card-label'));
   } else if (type==='instagram') {
-    loadInstagramEmbed(body, src, card.querySelector?.('.card-label'));
+    loadInstagramEmbed(body, src, card.querySelector?.('.card-label'), card);
   } else if (type==='noembed') {
     const loading=document.createElement('div'); loading.className='card-loading'; loading.textContent='Loading…';
     body.appendChild(loading);
@@ -3483,6 +3688,11 @@ function cardToData(card){
   if (card.dataset.importedTitle)  base.importedTitle  = card.dataset.importedTitle;
   if (card.dataset.importedAt)     base.importedAt     = parseInt(card.dataset.importedAt)||undefined;
   if (card.dataset.notes)          base.notes          = card.dataset.notes;
+  if (card.dataset.previewImage)       base.previewImage       = card.dataset.previewImage;
+  if (card.dataset.previewTitle)       base.previewTitle       = card.dataset.previewTitle;
+  if (card.dataset.previewDescription) base.previewDescription = card.dataset.previewDescription;
+  if (card.dataset.previewUsername)    base.previewUsername    = card.dataset.previewUsername;
+  if (card.dataset.previewFetchedAt)   base.previewFetchedAt   = parseInt(card.dataset.previewFetchedAt)||undefined;
   return base;
 }
 function frameToData(el){
@@ -3663,6 +3873,7 @@ function submitImport() {
     collectionId:   col.id,
     collectionName: col.name,
     importedTitle:  title,
+    previewTitle:   title || (getInstagramType(url)==='reel' ? 'Instagram reel' : 'Instagram post'),
     importedAt:     Date.now(),
     notes
   };
