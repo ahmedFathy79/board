@@ -1,9 +1,9 @@
-// Canvas Board — Service Worker v11
+// Canvas Board — Service Worker v12
 // HTML: network-first (always fresh). Static assets: cache-first (fast).
 // Firebase/Firestore: network-only (never cached).
-// /share route: serves index.html so Web Share Target params are handled by JS.
+// Legacy /share route: serves index.html for older installed manifests.
 
-const CACHE = 'vboard-v11';
+const CACHE = 'vboard-v12';
 const SHELL = [
   './',
   './index.html',
@@ -32,8 +32,9 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // ── Web Share Target: /share → serve index.html so JS handles params ──
-  // The PWA manifest routes share intents here; JS reads query params and creates cards.
+  // ── Legacy Web Share Target: /share → serve index.html so JS handles params ──
+  // Current manifest uses "/" because Cloudflare Workers static assets may not serve /share
+  // on the first Android share navigation before the service worker controls the page.
   if (url.pathname === '/share') {
     e.respondWith(
       caches.match('./index.html')

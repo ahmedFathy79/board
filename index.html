@@ -1888,17 +1888,36 @@ body.auth-required #login-screen { display: flex; }
     const sharedUrl   = p.get('url')   || '';
     const sharedText  = p.get('text')  || '';
     const sharedTitle = p.get('title') || '';
-    const urlInText   = sharedText.match(/https?:\/\/\S+/)?.[0] || '';
-    const targetUrl   = sharedUrl || urlInText;
-    if (targetUrl || location.pathname === '/share') {
+    const openedFromShare = location.pathname === '/share' || p.has('url') || p.has('text') || p.has('title');
+    const extractSharedUrl = (...parts) => {
+      for (const part of parts) {
+        const m = String(part || '').match(/https?:\/\/[^\s<>"']+/);
+        if (m?.[0]) return m[0].replace(/[)\].,;!?]+$/,'');
+      }
+      return '';
+    };
+    const targetUrl = extractSharedUrl(sharedUrl, sharedText, sharedTitle);
+    if (openedFromShare) {
+      console.log('[Share Target] app opened from share');
+      console.log('[Share Target] received params', { title: sharedTitle, text: sharedText, url: sharedUrl, path: location.pathname });
+    }
+    if (targetUrl) {
       const igPat = /instagram\.com\/(p|reel|reels|tv)\//i;
+      const isInstagram = igPat.test(targetUrl);
+      if (isInstagram) console.log('[Share Target] detected Instagram URL', targetUrl);
       localStorage.setItem('vboard-pending-share', JSON.stringify({
         url: targetUrl, title: sharedTitle, text: sharedText,
-        isInstagram: igPat.test(targetUrl), timestamp: Date.now()
+        isInstagram, timestamp: Date.now()
       }));
+      console.log('[Share Target] saved pending import');
+      history.replaceState({}, document.title, '/');
+    } else if (openedFromShare) {
+      console.warn('[Share Target] error: no URL found in share params');
       history.replaceState({}, document.title, '/');
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('[Share Target] error:', e?.message || e);
+  }
 })();
 
 // ── Firebase config ── (replace placeholders with your real values)
@@ -3956,19 +3975,23 @@ function checkPendingImports() {
     const data = JSON.parse(raw);
     // Discard stale items (>30 min old)
     if (!data.url || Date.now() - data.timestamp > 30 * 60 * 1000) {
+      console.warn('[Share Target] error: pending import missing URL or expired');
       localStorage.removeItem('vboard-pending-share');
       return;
     }
     localStorage.removeItem('vboard-pending-share');
     if (data.isInstagram) {
       openImportDialog(normalizeInstagramUrl(data.url), data.title);
+      console.log('[Share Target] opened import dialog', data.url);
     } else if (data.url) {
       // Generic URL shared — add as a regular card
       const c = viewportCenter();
       pushHistory();
       spawnCard(parseURL(data.url), c.x + Math.random()*40-20, c.y + Math.random()*40-20);
+      console.log('[Share Target] added shared URL card', data.url);
     }
   } catch(e) {
+    console.warn('[Share Target] error:', e?.message || e);
     localStorage.removeItem('vboard-pending-share');
   }
 }
