@@ -272,7 +272,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
 .video-overlay-play {
   width:56px; height:56px; border-radius:50%; position:relative; z-index:2;
   background:rgba(0,0,0,.65); display:flex; align-items:center; justify-content:center;
-  color:#fff; font-size:22px; pointer-events:none; backdrop-filter:blur(6px);
+  color:#fff; font-size:22px; pointer-events:none; backdrop-filter: none;
   border:2px solid rgba(255,255,255,.45);
   box-shadow:0 4px 24px rgba(0,0,0,.6);
   transition:transform .15s, background .15s;
@@ -282,7 +282,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
   position:absolute; bottom:14px; z-index:2;
   font-size:11px; color:rgba(255,255,255,.85);
   background:rgba(0,0,0,.5); padding:3px 10px; border-radius:12px; letter-spacing:.08em;
-  pointer-events:none; backdrop-filter:blur(4px);
+  pointer-events:none; backdrop-filter: none;
 }
 .card-loading {
   display: flex; align-items: center; justify-content: center;
@@ -371,7 +371,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
   position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 900;
   display: flex; align-items: center; padding: 0 14px 0 66px;
   background: var(--ui-bg);
-  backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: none;
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 0 var(--border);
   gap: 4px;
@@ -511,7 +511,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
   display: flex; flex-direction: column; align-items: center;
   gap: 1px; padding: 8px 5px;
   background: var(--ui-bg);
-  backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: none;
   border: 1px solid var(--border2); border-radius: 16px;
   box-shadow: var(--shadow);
   max-height: calc(100vh - 80px); overflow: visible;
@@ -577,7 +577,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
 #zoom-controls {
   position: fixed; bottom: 20px; right: 20px; z-index: 1000;
   display: flex; align-items: center; gap: 1px; padding: 5px 7px;
-  background: var(--ui-bg); backdrop-filter: blur(16px) saturate(1.4);
+  background: var(--ui-bg); backdrop-filter: none;
   border: 1px solid var(--border2); border-radius: 12px; box-shadow: var(--shadow);
 }
 .zoom-btn {
@@ -600,7 +600,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
   z-index: 1100;
   display: none; align-items: center; gap: 2px;
   padding: 5px 8px;
-  background: var(--ui-bg); backdrop-filter: blur(16px) saturate(1.4);
+  background: var(--ui-bg); backdrop-filter: none;
   border: 1px solid var(--border2); border-radius: 12px; box-shadow: var(--shadow-lg);
   opacity: 0; transition: opacity .15s, transform .15s;
 }
@@ -632,7 +632,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
   position: fixed; bottom: 20px; left: 20px; z-index: 1000;
   display: flex; align-items: center; gap: 6px;
   padding: 5px 9px;
-  background: var(--ui-bg); backdrop-filter: blur(16px) saturate(1.4);
+  background: var(--ui-bg); backdrop-filter: none;
   border: 1px solid var(--border2); border-radius: 12px; box-shadow: var(--shadow);
   color: var(--muted);
   cursor: pointer; transition: color .12s, background .12s;
@@ -682,7 +682,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
 /* ── MODALS ── */
 #modal-overlay {
   position: fixed; inset: 0; z-index: 2000;
-  background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
+  background: rgba(0,0,0,.5); backdrop-filter: none;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
@@ -720,7 +720,7 @@ html[data-theme="light"] .frame-el { background: rgba(77,144,254,.05); }
 /* ── SHORTCUTS PANEL ── */
 #shortcuts-panel {
   position: fixed; inset: 0; z-index: 2100;
-  background: rgba(0,0,0,.55); backdrop-filter: blur(8px);
+  background: rgba(0,0,0,.55); backdrop-filter: none;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
@@ -831,8 +831,8 @@ body::before { opacity: 0; } /* drop grain for cleaner glass */
 #color-picker, #shape-picker, #modal, .shortcuts-box,
 .card, .picker-tile, #align-bar, #tweaks-panel {
   background: var(--glass-tint) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.7);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.7);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: 1px solid var(--glass-border) !important;
   box-shadow: var(--glass-shadow) !important;
   color: var(--fg);
@@ -878,7 +878,7 @@ body::before { opacity: 0; } /* drop grain for cleaner glass */
 .tool-btn.active:hover { background: var(--accent); filter: brightness(1.08); }
 .tool-btn::after {
   background: var(--glass-tint-hi);
-  backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: none;
   border: 1px solid var(--glass-border);
   color: var(--fg);
   box-shadow: 0 6px 18px -6px rgba(0,0,0,0.4);
@@ -946,7 +946,7 @@ body::before { opacity: 0; } /* drop grain for cleaner glass */
 .card-open-link:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
 
 /* Text card stays minimal */
-.card.text-card { background: transparent !important; box-shadow: none !important; backdrop-filter: none !important; border: 1px solid transparent !important; }
+.card.text-card { background: transparent !important; box-shadow: none !important; backdrop-filter: none; border: 1px solid transparent !important; }
 .card.text-card:hover { border-color: var(--glass-border-hi) !important; }
 .card.text-card.selected { box-shadow: 0 0 0 2px var(--accent) !important; }
 .text-card-area { color: var(--fg); }
@@ -1038,13 +1038,13 @@ html[data-theme="light"] .modal-input { background: rgba(255,255,255,0.50); }
 .picker-count { color: var(--fg-muted); }
 .picker-del { color: var(--fg-muted); }
 .picker-del:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
-.picker-action-btn { background: var(--glass-tint); border: 1px solid var(--glass-border); color: var(--fg); border-radius: 12px; backdrop-filter: blur(var(--glass-blur)) saturate(1.6); }
+.picker-action-btn { background: var(--glass-tint); border: 1px solid var(--glass-border); color: var(--fg); border-radius: 12px; backdrop-filter: none; }
 .picker-action-btn:hover { background: var(--glass-tint-hi); }
 .picker-tile.new-tile {
   background: transparent !important;
   border: 1.5px dashed var(--glass-border-hi) !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
+  backdrop-filter: none;
 }
 .picker-tile.new-tile:hover {
   border-color: var(--accent) !important;
@@ -1059,7 +1059,7 @@ html[data-theme="light"] .modal-input { background: rgba(255,255,255,0.50); }
 .align-btn:hover { background: var(--glass-tint-hi); color: var(--fg); }
 .align-sep { background: var(--glass-border); }
 #align-count { color: var(--fg-muted); }
-.align-btn::after { background: var(--glass-tint-hi); backdrop-filter: blur(14px); border: 1px solid var(--glass-border); color: var(--fg); }
+.align-btn::after { background: var(--glass-tint-hi); backdrop-filter: none; border: 1px solid var(--glass-border); color: var(--fg); }
 
 /* Card-tinted accent icon (subtle iOS-style square behind label dot row) */
 .card-drag-dots {
@@ -1113,7 +1113,7 @@ html[data-theme="light"] .modal-input { background: rgba(255,255,255,0.50); }
 }
 .tw-swatch.custom::before {
   content:''; position: absolute; inset: 4px; border-radius: 50%;
-  background: var(--glass-tint); backdrop-filter: blur(6px);
+  background: var(--glass-tint); backdrop-filter: none;
 }
 .tw-swatch.custom svg { position: relative; z-index: 1; color: var(--fg); }
 .tw-swatch.custom input[type=color] {
@@ -1191,8 +1191,8 @@ body.auth-required #login-screen { display: flex; }
   width: 100%; max-width: 390px; padding: 44px 40px 36px;
   border-radius: 26px; text-align: center;
   background: var(--glass-tint, rgba(255,255,255,0.07));
-  backdrop-filter: blur(var(--glass-blur, 24px)) saturate(1.7);
-  -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(1.7);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: 1px solid var(--glass-border, rgba(255,255,255,0.14));
   box-shadow:
     0 1px 0 inset rgba(255,255,255,0.18),
@@ -1280,7 +1280,7 @@ body.auth-required #login-screen { display: flex; }
    ══════════════════════════════════════════ */
 .import-overlay {
   position: fixed; inset: 0; z-index: 3000;
-  background: rgba(8,7,12,0.65); backdrop-filter: blur(6px);
+  background: rgba(8,7,12,0.65); backdrop-filter: none;
   display: flex; align-items: center; justify-content: center; padding: 16px;
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
@@ -1289,8 +1289,8 @@ body.auth-required #login-screen { display: flex; }
   width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
   border-radius: 22px; padding: 22px 22px 18px;
   background: var(--glass-tint, rgba(255,255,255,0.07));
-  backdrop-filter: blur(var(--glass-blur,24px)) saturate(1.7);
-  -webkit-backdrop-filter: blur(var(--glass-blur,24px)) saturate(1.7);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: 1px solid var(--glass-border, rgba(255,255,255,0.14));
   box-shadow: 0 1px 0 inset rgba(255,255,255,0.16), 0 24px 60px -10px rgba(0,0,0,0.6);
   transform: scale(.96); transition: transform .2s;
@@ -1460,6 +1460,60 @@ body.auth-required #login-screen { display: flex; }
   .import-input, .import-textarea, .import-select { padding:13px 14px; }
   .import-btn-add, .import-btn-cancel { padding:13px 20px; }
 }
+
+/* Solid studio surfaces — inspired by rounded editorial cards and pastel blocks. */
+:root {
+  --glass-tint: #242826; --glass-tint-hi: #313733;
+  --glass-border: #3c433e; --glass-border-hi: #59645c;
+  --glass-shadow: none; --glass-blur: 0px;
+  --fg: #f5f5ef; --fg-muted: #acb6ae;
+  --card: #242826; --card2: #313733; --ui-bg: #242826;
+  --shadow: 0 3px 12px #00000014; --shadow-lg: 0 8px 24px #0000001a;
+}
+html[data-theme="light"] {
+  --board-bg: #e7e5df; --glass-tint: #ffffff; --glass-tint-hi: #f1f1ed;
+  --glass-border: #e1e3dc; --glass-border-hi: #c3c9bf;
+  --glass-shadow: none; --fg: #171c18; --fg-muted: #626b64;
+  --card: #fff; --card2: #f1f1ed; --ui-bg: #fff;
+  --dot-color: #aeb5aa; --line-color: #d4d8cf;
+}
+#topbar { top: 12px; left: 12px; right: 12px; border-radius: 24px; padding: 0 16px; }
+#sidebar { border-radius: 28px; padding: 12px 7px; }
+#zoom-controls, #grid-toggle, .topbar-btn, .picker-action-btn { border-radius: 999px; }
+.tool-btn, .top-icon-btn, .zoom-btn { border-radius: 50%; }
+.tool-btn.active { background: #c6f28f; color: #172017; box-shadow: none; }
+.card, .picker-tile { border-radius: 28px; box-shadow: none !important; }
+.card:hover, .picker-tile:hover { box-shadow: 0 3px 12px #17201712 !important; }
+.card.selected, .card.dragging { box-shadow: 0 0 0 2px var(--accent) !important; }
+.card-header { background: var(--glass-tint-hi); padding: 12px 15px; border: 0; }
+.card-label { font-weight: 500; color: var(--fg); }
+.card-body { border-radius: 0 0 26px 26px; }
+.card.sticky-yellow { background: #f1e6a1 !important; }
+.card.sticky-pink { background: #f1c7da !important; }
+.card.sticky-blue { background: #b4d1ec !important; }
+.card.sticky-green { background: #c6f28f !important; }
+.card.sticky-purple { background: #d5c5ee !important; }
+.card.sticky-orange { background: #ff995c !important; }
+.card[class*="sticky-"] .card-header { background: transparent; }
+.card[class*="sticky-"] .sticky-textarea, .card[class*="sticky-"] .card-label,
+.card[class*="sticky-"] .card-delete { color: #20271e; }
+.card.comment-card { background: #c6f28f !important; border-color: #a6ce70 !important; }
+.comment-area, .comment-author { color: #20271e; }
+.card.comment-card::after { border-top-color: #a6ce70; }
+#modal, .shortcuts-box, .import-dialog, #tweaks-panel, .login-card { border-radius: 28px; }
+.login-card, .import-dialog { background: var(--glass-tint); box-shadow: none; }
+.picker-title, .picker-title em, #empty h2, .login-title {
+  font-family: 'DM Sans', sans-serif; font-style: normal; font-weight: 500; letter-spacing: -.055em;
+}
+.picker-meta { background: var(--glass-tint-hi); }
+.picker-tile.new-board { background: #c6f28f !important; color: #172017; border: 0 !important; }
+.modal-input, html[data-theme="light"] .modal-input { background: var(--glass-tint-hi); }
+.card iframe { pointer-events: none; }
+.card.embed-interacting iframe { pointer-events: auto; }
+.embed-interact { border: 0; border-radius: 999px; background: var(--glass-tint-hi); color: var(--fg); padding: 5px 9px; font: 11px 'DM Sans',sans-serif; cursor: pointer; }
+.embed-interacting .embed-interact { background: #c6f28f; color: #172017; }
+@media(max-width: 640px) { #topbar { top: 6px; left: 6px; right: 6px; border-radius: 18px; padding: 0 8px; } }
+
 </style>
 </head>
 <body class="auth-loading">
@@ -2195,7 +2249,7 @@ function applyTheme(dark) {
     // Fallback: flip board-bg if it's still on the wrong theme's auto-color
     const curBg = (root.style.getPropertyValue('--board-bg') || '').trim().toLowerCase();
     const LIGHT_AUTO = new Set(['#ece7df','#f3ecdc','#e2e8ef','#eee3d6','#ffffff','#f3f1ec']);
-    const DARK_AUTO  = new Set(['#0e0d12','#0b1525','#10131a','#1a1326','#2a1818']);
+    const DARK_AUTO  = new Set(['#e7e5df','#0e0d12','#0b1525','#10131a','#1a1326','#2a1818']);
     if (dark  && LIGHT_AUTO.has(curBg)) root.style.setProperty('--board-bg', '#0e0d12');
     if (!dark && DARK_AUTO.has(curBg))  root.style.setProperty('--board-bg', '#f3ecdc');
   }
@@ -2290,7 +2344,7 @@ boardRoot.addEventListener('mousedown', e => {
 function applyTransform() {
   canvas.style.transform = `translate(${panX}px,${panY}px) scale(${scale})`;
   zoomPct.textContent = Math.round(scale * 100) + '%';
-  const cell = 24 * scale;
+  const cell = 24; // Screen-space grid: spacing and dot radius stay constant at every zoom.
   if (gridMode !== 'off') {
     boardRoot.style.backgroundSize = `${cell}px ${cell}px`;
     boardRoot.style.backgroundPosition = `${panX}px ${panY}px`;
@@ -2320,18 +2374,45 @@ boardRoot.addEventListener('wheel', e => {
     applyTransform();
   }
   save();
-}, { passive: false });
+}, { passive: false, capture: true });
+
+// Embedded sites stay in canvas-navigation mode until explicitly activated.
+function guardEmbeddedCards() {
+  canvas.querySelectorAll('.card iframe').forEach(ifr => {
+    const card = ifr.closest('.card');
+    const header = card.querySelector('.card-header');
+    if (!header || card.querySelector('.embed-interact')) return;
+    const button = document.createElement('button');
+    button.className = 'embed-interact';
+    button.textContent = 'Interact';
+    button.title = 'Use embedded content; move outside the card to return to board navigation';
+    button.setAttribute('aria-pressed', 'false');
+    const reset = () => {
+      card.classList.remove('embed-interacting');
+      button.textContent = 'Interact'; button.setAttribute('aria-pressed', 'false');
+    };
+    button.addEventListener('mousedown', e => e.stopPropagation());
+    button.addEventListener('click', () => {
+      const active = card.classList.toggle('embed-interacting');
+      button.textContent = active ? 'Done' : 'Interact';
+      button.setAttribute('aria-pressed', String(active));
+    });
+    card.addEventListener('mouseleave', reset);
+    header.insertBefore(button, header.querySelector('.card-delete'));
+  });
+}
+new MutationObserver(guardEmbeddedCards).observe(canvas, { childList: true, subtree: true });
 
 // Safari gesture (pinch)
 let _gScale = 1;
-boardRoot.addEventListener('gesturestart',  e => { e.preventDefault(); _gScale = 1; });
+boardRoot.addEventListener('gesturestart',  e => { e.preventDefault(); _gScale = 1; }, { passive: false, capture: true });
 boardRoot.addEventListener('gesturechange', e => {
   e.preventDefault();
   const f = e.scale / _gScale; _gScale = e.scale;
   const r = boardRoot.getBoundingClientRect();
   zoomAround(e.clientX - r.left, e.clientY - r.top, f);
-});
-boardRoot.addEventListener('gestureend', e => { e.preventDefault(); save(); });
+}, { passive: false, capture: true });
+boardRoot.addEventListener('gestureend', e => { e.preventDefault(); save(); }, { passive: false, capture: true });
 
 // Pan: hand tool, middle-mouse, space+drag
 boardRoot.addEventListener('mousedown', e => {
@@ -4573,45 +4654,42 @@ if ('serviceWorker' in navigator) {
     <div class="tw-row-label"><b>Accent</b></div>
     <div class="tw-swatches" data-key="accent"></div>
   </div>
-  <div class="tw-section">
-    <div class="tw-row-label"><b>Glass blur</b><span id="tw-blur-val">24px</span></div>
-    <div class="tw-slider-row"><input type="range" id="tw-blur" min="0" max="48" step="1" value="24"></div>
-  </div>
+
 </div>
 
 <script>
 (function(){
   /* Default tweak values (also the source of truth on disk) */
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-    "boardBg": "#f3ecdc",
-    "accent": "#22c1d6",
+    "boardBg": "#e7e5df",
+    "accent": "#315b4e",
     "theme": "light",
-    "glassBlur": 2
+    "glassBlur": 0
   }/*EDITMODE-END*/;
 
   /* Curated swatch palettes */
   const PALETTES = {
     boardBg: [
       '#0e0d12', '#0b1525', '#10131a', '#1a1326', '#2a1818',
-      '#ece7df', '#f3ecdc', '#e2e8ef', '#eee3d6', '#ffffff'
+      '#e7e5df', '#f3ecdc', '#e2e8ef', '#eee3d6', '#ffffff'
     ],
-    accent:  ['#4a6cf7', '#ff5113', '#15c47a', '#b46ef5', '#ffb020', '#ff4f8b', '#22c1d6']
+    accent:  ['#315b4e', '#a6ce70', '#ff995c', '#b4d1ec', '#4a6cf7', '#ff5113', '#15c47a', '#b46ef5', '#ffb020', '#ff4f8b', '#22c1d6']
   };
 
   /* Sensible defaults per theme so Light/Dark toggle actually changes the canvas */
   const THEME_DEFAULTS = {
     dark:  { boardBg: '#0e0d12' },
-    light: { boardBg: '#f3ecdc' }
+    light: { boardBg: '#e7e5df' }
   };
   /* Treat these as "auto-managed" board colors — switching theme can replace them */
-  const AUTO_BG = new Set(['#0e0d12','#0b1525','#10131a','#1a1326','#2a1818','#ece7df','#f3ecdc','#e2e8ef','#eee3d6','#ffffff']);
+  const AUTO_BG = new Set(['#e7e5df','#0e0d12','#0b1525','#10131a','#1a1326','#2a1818','#ece7df','#f3ecdc','#e2e8ef','#eee3d6','#ffffff']);
 
   const root = document.documentElement;
 
   function apply(state){
     root.style.setProperty('--board-bg', state.boardBg);
     root.style.setProperty('--accent',   state.accent);
-    root.style.setProperty('--glass-blur', state.glassBlur + 'px');
+    root.style.setProperty('--glass-blur', '0px');
     root.style.setProperty('--orange',   state.accent); /* keep legacy widgets retinted */
     /* Theme */
     const isDark = state.theme !== 'light';
@@ -4705,6 +4783,10 @@ if ('serviceWorker' in navigator) {
     try { return JSON.parse(localStorage.getItem('vboard-tweaks') || 'null'); } catch { return null; }
   })();
   const state = Object.assign({}, TWEAK_DEFAULTS, _savedTweaks || {});
+  // Migrate only the previous default colors; preserve custom palettes and themes.
+  if (state.boardBg === '#f3ecdc') state.boardBg = '#e7e5df';
+  if (state.accent === '#22c1d6') state.accent = '#315b4e';
+  state.glassBlur = 0;
 
   /* Ensure boardBg matches the theme on boot (handles stale persisted values) */
   function reconcileBoardBgWithTheme(){
@@ -4754,18 +4836,6 @@ if ('serviceWorker' in navigator) {
       persist({ theme: state.theme });
     });
   });
-
-  /* Slider — glass blur */
-  const blurSlider = document.getElementById('tw-blur');
-  const blurVal    = document.getElementById('tw-blur-val');
-  blurSlider.value = state.glassBlur;
-  blurVal.textContent = state.glassBlur + 'px';
-  blurSlider.addEventListener('input', () => {
-    state.glassBlur = parseInt(blurSlider.value, 10);
-    blurVal.textContent = state.glassBlur + 'px';
-    apply(state);
-  });
-  blurSlider.addEventListener('change', () => persist({ glassBlur: state.glassBlur }));
 
   /* Tweaks host protocol — register listener first */
   const panel = document.getElementById('tweaks-panel');
