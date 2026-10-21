@@ -1482,12 +1482,12 @@ html[data-theme="light"] {
 #zoom-controls, #grid-toggle, .topbar-btn, .picker-action-btn { border-radius: 999px; }
 .tool-btn, .top-icon-btn, .zoom-btn { border-radius: 50%; }
 .tool-btn.active { background: #c6f28f; color: #172017; box-shadow: none; }
-.card, .picker-tile { border-radius: 28px; box-shadow: none !important; }
+.card, .card.sticky, .picker-tile { border-radius: 28px; box-shadow: none !important; }
 .card:hover, .picker-tile:hover { box-shadow: 0 3px 12px #17201712 !important; }
 .card.selected, .card.dragging { box-shadow: 0 0 0 2px var(--accent) !important; }
 .card-header { background: var(--glass-tint-hi); padding: 12px 15px; border: 0; }
 .card-label { font-weight: 500; color: var(--fg); }
-.card-body { border-radius: 0 0 26px 26px; }
+.card-body, .card.sticky .card-body { border-radius: 0 0 26px 26px; }
 .card.sticky-yellow { background: #f1e6a1 !important; }
 .card.sticky-pink { background: #f1c7da !important; }
 .card.sticky-blue { background: #b4d1ec !important; }
