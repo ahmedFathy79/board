@@ -14,3 +14,5 @@ The production source is `index.html` in this repository. Cloudflare Workers Bui
 ## Appearance
 
 Opaque rounded surfaces, a warm neutral canvas, and pastel note colors. Light/dark modes and custom colors remain available; glass blur has been removed.
+
+Instagram cards open an in-board preview when clicking the thumbnail or Preview button. Opening Instagram externally is a separate explicit action. The avatar menu contains theme, grid, shortcuts, import, clear, and sign-out options; the left toolbar ends at save status.

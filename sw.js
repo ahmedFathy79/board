@@ -3,7 +3,7 @@
 // Firebase/Firestore: network-only (never cached).
 // Legacy /share route: serves index.html for older installed manifests.
 
-const CACHE = 'vboard-v9-solid';
+const CACHE = 'vboard-v10-preview-menu';
 const SHELL = [
   './',
   './index.html',

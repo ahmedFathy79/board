@@ -1514,6 +1514,31 @@ html[data-theme="light"] {
 .embed-interacting .embed-interact { background: #c6f28f; color: #172017; }
 @media(max-width: 640px) { #topbar { top: 6px; left: 6px; right: 6px; border-radius: 18px; padding: 0 8px; } }
 
+
+/* Two compact islands leave the center of the board unobstructed. */
+#topbar { right: auto; width: max-content; max-width: calc(100vw - 86px); }
+#board-name { width: 150px; min-width: 45px; }
+#user-area { position: fixed; right: 14px; top: 12px; z-index: 950; }
+body:not(.auth-ok) #user-area { display: none; }
+#account-toggle { position: relative; width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--glass-tint); background: #c6f28f; color: #172017; cursor: pointer; font: 600 13px 'DM Sans',sans-serif; }
+#account-toggle .user-avatar { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+#account-menu { position: absolute; top: 58px; right: 0; width: 235px; padding: 10px; border: 1px solid var(--glass-border); border-radius: 22px; background: var(--glass-tint); box-shadow: 0 10px 30px #00000015; }
+#account-menu[hidden] { display: none; }
+#account-menu .user-display-name { display: block; max-width: none; padding: 10px; }
+#account-menu button { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; height: 40px; padding: 0 12px; text-align: left; border: 0; border-radius: 12px; background: transparent; color: var(--fg); text-transform: none; letter-spacing: normal; font: 13px 'DM Sans',sans-serif; }
+#account-menu button:hover { background: var(--glass-tint-hi); }
+#account-menu #btn-signout { border-top: 1px solid var(--glass-border); margin-top: 5px; }
+#instagram-viewer { margin: auto; width: min(560px, calc(100vw - 24px)); height: min(830px, calc(100dvh - 32px)); padding: 14px; border: 1px solid var(--glass-border); border-radius: 24px; background: var(--glass-tint); color: var(--fg); overflow: hidden; }
+#instagram-viewer[open] { display: flex; flex-direction: column; }
+#instagram-viewer::backdrop { background: #10181088; }
+.preview-toolbar { display:flex; align-items:center; gap: 12px; font-size: 13px; }
+.preview-toolbar a { margin-left:auto; color:var(--fg); font-size:11px; }
+#preview-close { width:32px; height:32px; border:0; border-radius:50%; cursor:pointer; font-size:22px; background:var(--glass-tint-hi); color:var(--fg); }
+.preview-note { font-size:11px; color:var(--fg-muted); line-height:1.5; margin:10px 0; }
+#instagram-preview-frame { border:0; width:100%; flex:1; min-height:0; border-radius:12px; background:#fff; }
+.ig-preview-link { cursor: pointer; }
+@media(max-width:640px) { #board-name { width:85px; } #user-area { right:8px; top:6px; } #topbar { max-width:calc(100vw - 72px); } }
+
 </style>
 </head>
 <body class="auth-loading">
@@ -1605,37 +1630,36 @@ html[data-theme="light"] {
   </button>
   <!-- Sync status indicator -->
   <span id="sync-status" data-state="saved" title="Sync status"><span class="sync-label">Saved</span></span>
-  <!-- User area (shown when signed in) -->
-  <div class="user-area" id="user-area">
+</div>
+<div class="user-area" id="user-area">
+  <button id="account-toggle" aria-label="Account and board options" aria-expanded="false" aria-controls="account-menu">
+    <span id="avatar-fallback" aria-hidden="true">AF</span>
     <img id="user-avatar" class="user-avatar" src="" alt="" style="display:none">
+  </button>
+  <div id="account-menu" hidden>
     <span id="user-display-name" class="user-display-name"></span>
-    <button class="topbar-btn" id="btn-signout">Sign out</button>
-  </div>
-  <div class="topbar-right">
-    <!-- Grid toggle -->
-    <button class="top-icon-btn" id="btn-grid" title="Toggle grid (G)">
+<button class="top-icon-btn" id="btn-grid" title="Toggle grid (G)">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
-    </button>
-    <!-- Dark / Light mode toggle -->
-    <button class="top-icon-btn" id="btn-theme" title="Toggle light/dark mode">
+    <span>Toggle grid</span></button><button class="top-icon-btn" id="btn-theme" title="Toggle light/dark mode">
       <svg id="icon-moon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M13 9.5A6 6 0 016.5 3a.5.5 0 00-.6.6A5.5 5.5 0 1012.4 10a.5.5 0 00.6-.5z" fill="currentColor"/></svg>
       <svg id="icon-sun"  width="15" height="15" viewBox="0 0 15 15" fill="none" style="display:none"><circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.2 3.2l1 1M10.8 10.8l1 1M10.8 3.2l-1 1M4.2 10.8l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-    </button>
-    <!-- Help -->
-    <button class="top-icon-btn" id="btn-help" title="Keyboard shortcuts (?)">
+    <span>Light / dark mode</span></button><button class="top-icon-btn" id="btn-help" title="Keyboard shortcuts (?)">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 5.5a2 2 0 113 1.7c-.6.4-1 .9-1 1.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="11" r=".75" fill="currentColor"/></svg>
-    </button>
-    <!-- Instagram import -->
-    <button class="top-icon-btn" id="btn-import" title="Import from Instagram">
+    <span>Keyboard shortcuts</span></button><button class="top-icon-btn" id="btn-import" title="Import from Instagram">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
         <rect x="1.5" y="1.5" width="12" height="12" rx="3.5" stroke="currentColor" stroke-width="1.3"/>
         <circle cx="7.5" cy="7.5" r="2.8" stroke="currentColor" stroke-width="1.3"/>
         <circle cx="11.2" cy="3.8" r=".85" fill="currentColor"/>
       </svg>
-    </button>
-    <button class="topbar-btn" id="tb-clear">Clear</button>
+    <span>Import from Instagram</span></button><button class="topbar-btn" id="tb-clear">Clear</button><button class="topbar-btn" id="btn-signout">Sign out</button>
   </div>
 </div>
+
+<dialog id="instagram-viewer" aria-label="Instagram preview">
+  <div class="preview-toolbar"><strong>Instagram preview</strong><a id="preview-external" target="_blank" rel="noopener">Open on Instagram ↗</a><button id="preview-close" aria-label="Close preview">×</button></div>
+  <p class="preview-note">If Instagram asks you to sign in or cannot display this post, open it on Instagram.</p>
+  <iframe id="instagram-preview-frame" title="Instagram post preview" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+</dialog>
 
 <!-- Left sidebar -->
 <div id="sidebar">
@@ -2038,6 +2062,7 @@ function _populateUserArea(user) {
   if (!user || !nameEl) return;
   var name = user.isAnonymous ? 'Guest' : (user.displayName || user.email || 'User');
   nameEl.textContent = name.split(' ')[0];
+  document.getElementById('avatar-fallback').textContent = name.split(/\s+/).slice(0,2).map(part => part[0]).join('').toUpperCase();
   if (user.photoURL && avatarEl) { avatarEl.src = user.photoURL; avatarEl.style.display = 'block'; }
 }
 
@@ -2376,6 +2401,41 @@ boardRoot.addEventListener('wheel', e => {
   save();
 }, { passive: false, capture: true });
 
+
+// Account menu keeps all secondary actions beside the avatar.
+const accountToggle = document.getElementById('account-toggle');
+const accountMenu = document.getElementById('account-menu');
+function closeAccountMenu(restoreFocus = false) {
+  accountMenu.hidden = true; accountToggle.setAttribute('aria-expanded', 'false');
+  if (restoreFocus) accountToggle.focus();
+}
+accountToggle.addEventListener('click', () => {
+  const open = accountMenu.hidden;
+  accountMenu.hidden = !open; accountToggle.setAttribute('aria-expanded', String(open));
+  if (open) accountMenu.querySelector('button').focus();
+});
+accountMenu.addEventListener('click', e => { if (e.target.closest('button')) closeAccountMenu(); });
+document.addEventListener('click', e => { if (!e.target.closest('#user-area')) closeAccountMenu(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !accountMenu.hidden) { e.preventDefault(); closeAccountMenu(true); }
+});
+
+// Preview is separate from the canvas, so embedded pages cannot steal board navigation.
+const instagramViewer = document.getElementById('instagram-viewer');
+function openInstagramPreview(url) {
+  const clean = normalizeInstagramUrl(url);
+  if (!isInstagramUrl(clean)) return;
+  document.getElementById('preview-external').href = clean;
+  document.getElementById('instagram-preview-frame').src = clean.replace(/\/$/, '') + '/embed/';
+  if (!instagramViewer.open) instagramViewer.showModal();
+}
+document.getElementById('preview-close').addEventListener('click', () => instagramViewer.close());
+instagramViewer.addEventListener('close', () => document.getElementById('instagram-preview-frame').removeAttribute('src'));
+instagramViewer.addEventListener('click', e => { if(e.target === instagramViewer) {
+  const r=instagramViewer.getBoundingClientRect();
+  if(e.clientX<r.left || e.clientX>r.right || e.clientY<r.top || e.clientY>r.bottom) instagramViewer.close();
+}});
+
 // Embedded sites stay in canvas-navigation mode until explicitly activated.
 function guardEmbeddedCards() {
   canvas.querySelectorAll('.card iframe').forEach(ifr => {
@@ -2664,6 +2724,7 @@ alignBar.addEventListener('click', e=>{
 // KEYBOARD SHORTCUTS
 // ─────────────────────────────────────────────
 window.addEventListener('keydown', e => {
+  if (document.getElementById('instagram-viewer').open || !accountMenu.hidden) return;
   const tag  = document.activeElement.tagName;
   const inTx = tag==='INPUT'||tag==='TEXTAREA'||document.activeElement.contentEditable==='true';
   const modal = document.getElementById('modal-overlay').classList.contains('open');
@@ -3110,7 +3171,7 @@ function renderInstagramPreview(body, url, lbl, card, options={}){
   }
   body.innerHTML = `
     <div class="ig-preview-card" data-stable-instagram-preview="1">
-      <a class="ig-preview-link" href="${escHTML(url)}" target="_blank" rel="noopener" title="Open on Instagram">
+      <a class="ig-preview-link" href="${escHTML(url)}" target="_blank" rel="noopener" title="Preview Instagram post">
         ${image
           ? `<img class="ig-preview-thumb" src="${escHTML(image)}" alt="${escHTML(title)}" draggable="false">`
           : `<div class="ig-preview-placeholder">
@@ -3129,13 +3190,16 @@ function renderInstagramPreview(body, url, lbl, card, options={}){
       </a>
       <div class="ig-preview-actions">
         <a class="ig-open-btn" href="${escHTML(url)}" target="_blank" rel="noopener">Open on Instagram</a>
-        <button class="ig-live-btn" type="button">Preview embed</button>
+        <button class="ig-live-btn" type="button">Preview</button>
       </div>
     </div>`;
   body.querySelectorAll('a,button').forEach(el=>el.addEventListener('mousedown',e=>e.stopPropagation()));
+  body.querySelector('.ig-preview-link')?.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation(); openInstagramPreview(url);
+  });
   body.querySelector('.ig-live-btn')?.addEventListener('click', e => {
     e.preventDefault(); e.stopPropagation();
-    tryLiveInstagramEmbed(body, url, lbl, card);
+    openInstagramPreview(url);
   });
 }
 async function hydrateInstagramPreview(body, url, lbl, card){
@@ -3161,14 +3225,10 @@ function saveInstagramPreviewWhenReady(tries=0){
 }
 function loadInstagramEmbed(body, url, lbl, card){
   // Stable saved preview is rendered first so the card is never visually empty.
-  // The live Instagram embed is auto-tried through the throttled queue below.
+  // Open an interactive preview only on click; keep canvas cards stable.
   renderInstagramPreview(body, url, lbl, card);
   hydrateInstagramPreview(body, url, lbl, card);
-  enqueueAutoEmbed(() => {
-    if (!body.isConnected || body.dataset.igLiveAttempted === '1') return;
-    body.dataset.igLiveAttempted = '1';
-    return tryLiveInstagramEmbed(body, url, lbl, card);
-  });
+
 }
 async function tryLiveInstagramEmbed(body, url, lbl, card){
   const fallback = () => renderInstagramPreview(body, url, lbl, card);
